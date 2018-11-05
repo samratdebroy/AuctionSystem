@@ -19,7 +19,7 @@ def get_udp_server_socket(port_number = 10000):
         sock.bind(server_address)
         print('Socket binded to {0}'.format(server_address), file=sys.stderr)
     except OSError as err:
-        print('Binding Failed to {0}. Error: {2}'
+        print('Binding Failed to {0}. Error: {1}'
               .format(server_address, err), file=sys.stderr)
         sys.exit()
 

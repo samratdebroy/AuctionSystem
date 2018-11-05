@@ -30,7 +30,7 @@ def get_tcp_server_socket(port_number = 10000):
 
 
 def receive(conn):
-    data = conn.recv(1024)
+    data = conn.recv(1024) # TODO: idk what this 1024 is
     print('Received: {0}'.format(data), file=sys.stderr)
     return data
 

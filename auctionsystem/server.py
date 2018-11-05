@@ -1,6 +1,10 @@
 from auctionsystem.udp import server as udp_server
 from auctionsystem.tcp import server as tcp_server
+from auctionsystem.protocol import MESSAGE
+import queue
+
 import pickle
+
 
 class AuctionServer:
     def __init__(self):
@@ -21,6 +25,47 @@ class AuctionServer:
         # Setup sockets
         self.udp_socket = udp_server.get_udp_server_socket()
         self.tcp_socket = tcp_server.get_tcp_server_socket()
+
+        # The server needs to keep track of the messages it receives in order of reception
+        self.message_queue = queue.Queue()
+
+    def __del__(self):
+        self.udp_socket.close()
+        self.tcp_socket.close()
+
+    def run(self):
+        # LETS DO THIS
+        pass
+
+    def listen_udp(self):
+        # TODO: in an infinite while loop, listen to udp socket
+        # TODO: if anything received in udp socket, add message to queue
+        pass
+
+    def listen_tcp(self):
+        # TODO: in an infinite while loop, listen to tcp socket
+        # TODO: if anything received in tcp socket, add message to queue
+        pass
+
+
+    def handle_receive(self, data, addr=None):
+        # TODO: Handle the case where data[0] is damaged
+        command = data[0]
+        req_num = data[1]
+
+        if req_num is None:
+            pass # TODO something bad if request number is not valid
+
+        if command is MESSAGE.REGISTER:
+            self.rcv_register(req_num, name=data[2], ip_addr=[3], port_num=[4])
+        elif command is MESSAGE.DEREGISTER:
+            self.rcv_deregister(req_num, name=[2], ip_addr=[3])
+        elif command is MESSAGE.OFFER:
+            self.rcv_offer(req_num, name=data[2], ip_addr=data[3], port_num=addr[1], desc=data[4], min=data[5])
+        elif command is MESSAGE.BID:
+            self.rcv_bid(req_num, item_num=data[2], amount=data[3], addr=addr)
+        else:
+            pass #TODO: Something went super wrong, this wasn't a valid command message :O
 
 
     def rcv_register(self, req_num, name, ip_addr, port_num):
