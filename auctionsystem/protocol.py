@@ -1,4 +1,13 @@
+<<<<<<< HEAD
 class MESSAGE:
+=======
+from enum import Enum
+
+class PROTOCOL():
+    DELIMITER = '::'
+
+class MESSAGE(Enum):
+>>>>>>> bf361abcf9b65c13148132ff11c3a545ebc3298a
     REGISTER = 'REGISTER'
     REGISTERED = 'REGISTERED'
     UNREGISTERED = 'UNREGISTERED'
@@ -16,3 +25,27 @@ class MESSAGE:
     SOLD_TO = 'SOLDTO'
     NOT_SOLD = 'NOT-SOLD'
 
+<<<<<<< HEAD
+=======
+
+
+class REASON(Enum):
+    VALID = (b'VALID', 'valid')
+    ALREADY_REGISTERED = (b'ALRD_REGISTERED',
+                          'Client name is already in the registration table')
+    BAD_IP = (b'BAD-IP',
+              'ip_address is not valid or is damaged')
+    NOT_REGISTERED = (b'NOT_REGISTERED',
+                      'Client name not found in the registration table, might not have been registered at all')
+    ITEM_OFFERED = (b'ITEM_OFFERED',
+                    'An item is currently being offered for auction')
+    ACTIVE_BID = (b'ACTIVE_BID',
+                  'Client is currently leading with the highest bid for at least one item')
+    OFFER_LIMIT = (b'OFFER_LIMIT',
+                   'Client cannot have more than 3 items offered for bidding simultaneously')
+
+    def __init__(self, val, string):
+        self.val = val
+        self.str = string
+
+>>>>>>> bf361abcf9b65c13148132ff11c3a545ebc3298a

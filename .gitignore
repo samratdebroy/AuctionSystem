@@ -1,2 +1,7 @@
 .idea/
 venv/
+registration_file.pickle
+test.py
+auctionsystem/__pycache__/
+auctionsystem/tcp/__pycache__/
+auctionsystem/udp/__pycache__/
