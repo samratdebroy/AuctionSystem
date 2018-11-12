@@ -217,6 +217,7 @@ class AuctionServer:
 
     def sendall_new_item(self, name, offer):
         #  Create new TCP socket to handle bidding for this item ; send to all clients
+        #  TODO: Create new TCP socket to handle bidding for this item ; send to all clients
         new_item_server = TCPServer(self.loop, self.handle_receive)
 
         # For each client connected to the server, send a UDP message to inform them of a new item up for bidding
