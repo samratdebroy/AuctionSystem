@@ -1,7 +1,7 @@
 from enum import Enum
 
 class PROTOCOL():
-    DELIMITER = '::'
+    DELIMITER = ':::'
 
 class MESSAGE(Enum):
     REGISTER = 'REGISTER'
@@ -37,6 +37,8 @@ class REASON(Enum):
                   'Client is currently leading with the highest bid for at least one item')
     OFFER_LIMIT = (b'OFFER_LIMIT',
                    'Client cannot have more than 3 items offered for bidding simultaneously')
+    NO_VALID_BIDS = (b'NO_VALID_BIDS',
+                     'No valid bid exceeding the items minimum purchase price was made on the offered item')
 
     def __init__(self, val, string):
         self.val = val
