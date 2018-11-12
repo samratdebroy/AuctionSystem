@@ -5,12 +5,12 @@ import sys
 
 class UDPServer:
 
-    def __init__(self, loop, handle_receive_cb, port_number = 8888):
+    def __init__(self, loop, handle_receive_cb, port_number=8888):
         self._closed = False
         self._socket = self._get_udp_server_socket(port_number)
 
         # Start listeners for read/write events
-        loop.create_task(self._handle_receive(loop, handle_receive_cb))
+        self.task = loop.create_task(self._handle_receive(loop, handle_receive_cb))
 
     def send(self, data, addr):
         self._socket.sendto(data, addr)
@@ -19,10 +19,11 @@ class UDPServer:
     def close_socket(self):
         print('Closing socket', file=sys.stderr)
         self._closed = True
+        self.task.cancel()
         self._socket.close()
 
     @staticmethod
-    def _get_udp_server_socket(port_number = 8888):
+    def _get_udp_server_socket(port_number=8888):
         # Create a UDP socket
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

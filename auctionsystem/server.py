@@ -7,7 +7,7 @@ import pickle
 
 
 class AuctionServer:
-    def __init__(self):
+    def __init__(self, recover=False):
 
         self.loop = asyncio.get_event_loop()
 
@@ -27,11 +27,23 @@ class AuctionServer:
         try:
             self.offers = pickle.load(open(self.offers_file, "rb"))
             # TODO: Handle all previously created offers that were never finished
+            # Probably want to recreate TCP servers for each offered item and restart item's auction from the start
+            # Reset each field for each offer in the dict as if we're receiving new offers
+            # Signal the clients to change TCP connections to a new socket using a new new_item command
+            # Clients need to handle the fact it's a new_item command with an item_num for which they're already bidding
+            # They should all resend their last bid so we can re-establish the new highest_bid[_by]
+            # Clients should also cancel their previous connection if they haven't already
         except (OSError, IOError) as e:
             self.offers = dict()
             pickle.dump(self.offers, open(self.offers_file, "wb"))
 
+        # If not set to recover mode, ignore previous data saved in files
+        if not recover:
+            self.registration_table = dict()
+            self.offers = dict()
+
         # Keep track of item numbers to ensure they're all unique
+        # TODO: This should probably be saved to file in self.offers to ensure that we don't restart from 0 if recover
         self.next_item_number = 0
 
         # Setup sockets
@@ -67,7 +79,7 @@ class AuctionServer:
         elif command == MESSAGE.OFFER.value:
             self.rcv_offer(req_num, name=data[2], ip_addr=data[3], port_num=addr[1], desc=data[4], min=int(data[5]))
         elif command == MESSAGE.BID.value:
-            self.rcv_bid(req_num, item_num=int(data[2]), amount=int(data[3]), name=data[4], addr=addr)
+            self.rcv_bid(req_num, item_num=data[2], amount=data[3], name=data[4], addr=addr)
         else:
             pass #TODO: Something went super wrong, this wasn't a valid command message :O
 
@@ -168,7 +180,7 @@ class AuctionServer:
             validity = REASON.NOT_REGISTERED
 
         # The client is only allowed to make 3 simultaneous offers
-        if len([offer for key, offer in self.offers if name == offer['offered_by']]) > 3:
+        if len([offer for key, offer in self.offers.items() if name == offer['offered_by']]) > 3:
             validity = REASON.OFFER_LIMIT
 
         # TODO: what if ip_address or data is damaged?
@@ -178,7 +190,6 @@ class AuctionServer:
 
         if validity is REASON.VALID:
             # Update the offers dictionary with the new offer
-            # TODO: Should we store the start time of the item's auction in the offer?
             item_num = str(self.next_item_number)
             offer = {'item_num': item_num, 'offered_by': name, 'desc': desc, 'min': min,
                      'highest_bid': str(int(min) - 1), 'highest_bid_by': '', 'highest_bid_addr': None}
@@ -204,12 +215,12 @@ class AuctionServer:
         #  Send UDP message to deny offer to the client and explain why
         self.send_udp_message(req_num, reason, client_address=(ip_addr, int(port_num)), message=MESSAGE.OFFER_DENIED)
 
-    def sendall_new_item(self, name,  offer):
-        #  TODO: Create new TCP socket to handle bidding for this item ; send to all clients
+    def sendall_new_item(self, name, offer):
+        #  Create new TCP socket to handle bidding for this item ; send to all clients
         new_item_server = TCPServer(self.loop, self.handle_receive)
 
         # For each client connected to the server, send a UDP message to inform them of a new item up for bidding
-        for client in self.registration_table[name]:
+        for client in self.registration_table.values():
             self.send_udp_message(offer['item_num'], offer['desc'], offer['min'], new_item_server.get_port_number(),
                                   client_address=(client['ip_addr'], int(client['port_num'])),
                                   message=MESSAGE.NEW_ITEM)
@@ -219,7 +230,7 @@ class AuctionServer:
 
         #  Serialize and save the the updated offers dictionary to file
         with open(self.offers_file, 'wb') as file:
-            pickle.dump(self.offers_file, file)
+            pickle.dump(self.offers, file)
 
         # Start a coroutine that starts a 5 minute timer after which this offer should no longer accept bids
         self.loop.create_task(self.bidding_counter(item_num=offer['item_num']))
@@ -231,7 +242,7 @@ class AuctionServer:
 
         # Get the seller's address and prepare to send them a message whether or not the item was sold
         offer = self.offers[item_num]
-        seller = self.registration_table[offer['sold_by']]
+        seller = self.registration_table[offer['offered_by']]
         seller_address = (seller['ip_addr'], int(seller['port_num']))
 
         # Get the winning bidder's name if there is one
@@ -246,6 +257,9 @@ class AuctionServer:
 
             # Signal that the bidding is over to all the other clients
             for connection in self.tcp_servers[item_num].conn.values():
+                # Don't signal biding-over to winner
+                if connection.addr == winner_addr:
+                    continue
                 data_to_send = self.make_data_to_send(MESSAGE.BID_OVER.value, item_num, bid_amount)
                 connection.send(data_to_send)
 
@@ -262,7 +276,7 @@ class AuctionServer:
         del self.offers[item_num]
         #  Serialize and save the the updated offers dictionary to file
         with open(self.offers_file, 'wb') as file:
-            pickle.dump(self.offers_file, file)
+            pickle.dump(self.offers, file)
 
     def rcv_bid(self, req_num, item_num, amount, name, addr):
         # If the bid is the highest one yet for the item, then sendall_highest_bid
@@ -289,7 +303,10 @@ class AuctionServer:
     @staticmethod
     def make_data_to_send(*argv):
         # Returns encoded binary data formatted as a string with delimiters between each element
-        data = PROTOCOL.DELIMITER.join(argv)
+        args = []
+        for arg in argv:
+            args.append(str(arg))
+        data = PROTOCOL.DELIMITER.join(args)
         return data.encode()
 
     def send_udp_message(self, *argv, client_address, message):
