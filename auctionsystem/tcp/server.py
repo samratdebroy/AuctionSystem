@@ -97,4 +97,3 @@ class TCPServer:
 
     def get_port_number(self):
         return str(self._socket.getsockname()[1])
-

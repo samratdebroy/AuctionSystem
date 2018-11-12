@@ -3,31 +3,29 @@ import socket
 import sys
 
 
-class UDPClient():
+class UDPClient:
 
-    def __init__(self, loop, server_address):
-        self._write_queue = asyncio.Queue(loop=loop)
-        self.recv_queue = asyncio.Queue(loop=loop)
+    def __init__(self, loop, handle_receive_cb, server_addres = ('', 8888)):
         self._closed = False
-        self._socket, self.client_address = self._get_udp_client_socket(server_address)
+        self._socket, self.address = self._get_udp_client_socket(server_addres)
 
         # Start listeners for read/write events
-        loop.create_task(self._handle_send())
-        loop.create_task(self._handle_receive(loop))
+        loop.create_task(self._handle_receive(loop, handle_receive_cb))
 
     def send(self, data, addr):
-        self._write_queue.put_nowait((data, addr))
+        self._socket.sendto(data, addr)
+        print('To {0} sent: {1}'.format(addr, data), file=sys.stderr)
 
     def close_socket(self):
         print('Closing socket', file=sys.stderr)
         self._closed = True
         self._socket.close()
 
-    async def _handle_receive(self, loop):
+    async def _handle_receive(self, loop, handle_receive_cb):
         while True:
             data, addr = await self._async_recvfrom(loop, 1024)
             print('From {0} received: {1}'.format(addr, data), file=sys.stderr)
-            await self.recv_queue.put((data, addr))
+            handle_receive_cb(data, addr)
 
     def _async_recvfrom(self, loop, n_bytes, future=None, registered=False):
         # asyncio doesn't have an asynchronous version of recvfrom so this is an implementation of it
@@ -45,7 +43,6 @@ class UDPClient():
 
         # Check and see if the data and address have been received, else wait on future values
         try:
-            # TODO: Should add another exception for ConnectionResetError when server goes down
             data, addr = self._socket.recvfrom(n_bytes)
         except (BlockingIOError, InterruptedError):
             loop.add_reader(sock_file, self._async_recvfrom, loop, n_bytes, future, True)
@@ -53,20 +50,12 @@ class UDPClient():
             future.set_result((data, addr))
         return future
 
-    async def _handle_send(self):
-        while True:
-            # Wait until something is put in the write_queue and then send it
-            data, addr = await self._write_queue.get()
-            self._socket.sendto(data, addr)
-            self._write_queue.task_done()
-            print('To {0} sent: {1}'.format(addr, data), file=sys.stderr)
-
     @staticmethod
     def _get_udp_client_socket(server_address):
         # Create a UDP socket
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # Do we need this?
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Do we need this?
             sock.setblocking(False)
             print('UDP client socket created')
         except OSError as err:
@@ -75,7 +64,7 @@ class UDPClient():
 
         # You need at least one sendto for the client before calling any "recvfrom"
         # otherwise it doesn't know where the host is
-        sock.sendto(b'TEST::Starting connection', server_address)  # TODO: find soln to hack
+        sock.sendto(b'TEST:::Starting connection', server_address)  # TODO: find soln to hack
         print('To {0} sent: {1}'.format(server_address, b'Starting connection'), file=sys.stderr)
 
         # Get client socket's address and port number

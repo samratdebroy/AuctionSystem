@@ -67,7 +67,7 @@ class AuctionServer:
         elif command == MESSAGE.OFFER.value:
             self.rcv_offer(req_num, name=data[2], ip_addr=data[3], port_num=addr[1], desc=data[4], min=int(data[5]))
         elif command == MESSAGE.BID.value:
-            self.rcv_bid(req_num, item_num=int(data[2]), amount=int(data[3]), name=data[4], addr=addr)
+            self.rcv_bid(req_num, item_num=data[2], amount=data[3], name=data[4], addr=addr)
         else:
             pass #TODO: Something went super wrong, this wasn't a valid command message :O
 
@@ -204,7 +204,7 @@ class AuctionServer:
         #  Send UDP message to deny offer to the client and explain why
         self.send_udp_message(req_num, reason, client_address=(ip_addr, int(port_num)), message=MESSAGE.OFFER_DENIED)
 
-    def sendall_new_item(self, name,  offer):
+    def sendall_new_item(self, name, offer):
         #  TODO: Create new TCP socket to handle bidding for this item ; send to all clients
         new_item_server = TCPServer(self.loop, self.handle_receive)
 
@@ -246,6 +246,9 @@ class AuctionServer:
 
             # Signal that the bidding is over to all the other clients
             for connection in self.tcp_servers[item_num].conn.values():
+                # Don't signal biding-over to winner
+                if connection.addr == winner_addr:
+                    continue
                 data_to_send = self.make_data_to_send(MESSAGE.BID_OVER.value, item_num, bid_amount)
                 connection.send(data_to_send)
 
@@ -289,7 +292,10 @@ class AuctionServer:
     @staticmethod
     def make_data_to_send(*argv):
         # Returns encoded binary data formatted as a string with delimiters between each element
-        data = PROTOCOL.DELIMITER.join(argv)
+        args = []
+        for arg in argv:
+            args.append(str(arg))
+        data = PROTOCOL.DELIMITER.join(args)
         return data.encode()
 
     def send_udp_message(self, *argv, client_address, message):
