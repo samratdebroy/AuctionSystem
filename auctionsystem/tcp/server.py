@@ -12,6 +12,8 @@ class TCPServer:
             self.sock = connection
             self._send_queue = asyncio.Queue(loop=loop)
             self.tasks = []
+            # TODO: should I have a callback to handle cases where client connection is lost?
+            # TODO: Callback should handle what happens if we lose highest_bidder, seller
 
             # Create listener to receive data
             self.tasks.append(loop.create_task(self._handle_receive(loop, handle_receive_cb)))
@@ -36,7 +38,7 @@ class TCPServer:
                 print('Sent: {0} to {1}'.format(data, self.addr), file=sys.stderr)
                 self._send_queue.task_done()
 
-    def __init__(self, loop, handle_receive_cb, port_number=8888):
+    def __init__(self, loop, handle_receive_cb, port_number=0):
 
         self.conn = {}  # List of all valid connections
         self._socket = self.get_tcp_server_socket(port_number)
@@ -48,13 +50,14 @@ class TCPServer:
         self.close_connections()
 
     @staticmethod
-    def get_tcp_server_socket(port_number = 10000):
-        ip_address = b'localhost'
+    def get_tcp_server_socket(port_number=0):
+        ip_address = socket.getfqdn()
         server_address = (ip_address, port_number)
 
         # Create a TCP socket
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             sock.setblocking(False)
             print('TCP server socket created')
         except OSError as err:
@@ -64,7 +67,8 @@ class TCPServer:
         # Bind the socket to the port
         try:
             sock.bind(server_address)
-            print('Socket binded to {0}'.format(server_address), file=sys.stderr)
+            updated_server_address = (server_address[0], sock.getsockname()[1])
+            print('Socket binded to {0}'.format(updated_server_address), file=sys.stderr)
         except OSError as err:
             print('Binding Failed to {0}. Error: {1}'
                   .format(server_address, err), file=sys.stderr)
@@ -97,4 +101,3 @@ class TCPServer:
 
     def get_port_number(self):
         return str(self._socket.getsockname()[1])
-
