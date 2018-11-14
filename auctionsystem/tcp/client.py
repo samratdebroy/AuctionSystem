@@ -7,16 +7,19 @@ class TCPClient:
 
     def __init__(self, loop, handle_receive_cb, server_address=('', 8888)):
         self.server_address = server_address
-        self._socket = self.get_tcp_client_socket(self.server_address[1])
+        self._socket = self.get_tcp_client_socket()
         self._send_queue = asyncio.Queue(loop=loop)
 
         self.tasks = []
-        # Create listener to receive data
-        self.tasks.append(loop.create_task(self._handle_receive(loop, handle_receive_cb)))
-        self.tasks.append(loop.create_task(self._handle_send(loop)))
+        loop.create_task(self.initialize_client(loop, handle_receive_cb))
 
     def __del__(self):
         self.close_connections()
+
+    def send(self, data):
+        # Add data to async queue to ensure it's sent in order
+        # TODO: handle exception where send_queue is full
+        self._send_queue.put_nowait(data)
 
     def close_connections(self):
         print('Closing connections to this TCP client', file=sys.stderr)
@@ -31,7 +34,7 @@ class TCPClient:
         return str(self._socket.getsockname()[1])
 
     @staticmethod
-    def get_tcp_client_socket(server_address):
+    def get_tcp_client_socket():
         # Create a TCP socket
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -40,21 +43,23 @@ class TCPClient:
         except OSError as err:
             print('Failed to create client socket. Error: {0}'.format(err))
             sys.exit()
+        return sock
 
-        # Connect the TCP socket
+    async def initialize_client(self, loop, handle_receive_cb):
+        # This task is required to ensure that the socket is connected before launching receive/send handlers
+        await loop.create_task(self.connect(loop, self.server_address))
+        # Create listener to receive data and send data after connection is established
+        self.tasks.append(loop.create_task(self._handle_receive(loop, handle_receive_cb)))
+        self.tasks.append(loop.create_task(self._handle_send(loop)))
+
+    async def connect(self, loop, server_address):
+        # Connect the TCP socket asynchronously
         try:
-            sock.connect(server_address)
+            await loop.sock_connect(self._socket, server_address)
             print('TCP client socket connected to server')
         except OSError as err:
             print('Failed to connect client socket. Error: {0}'.format(err))
             sys.exit()
-
-        return sock
-
-    def send(self, data):
-        # Add data to async queue to ensure it's sent in order
-        # TODO: handle exception where send_queue is full
-        self._send_queue.put_nowait(data)
 
     async def _handle_receive(self, loop, handle_receive_cb):
         while True:

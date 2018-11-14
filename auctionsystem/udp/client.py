@@ -10,7 +10,7 @@ class UDPClient:
         self._socket, self.address = self._get_udp_client_socket(server_addres)
 
         # Start listeners for read/write events
-        loop.create_task(self._handle_receive(loop, handle_receive_cb))
+        self.task = loop.create_task(self._handle_receive(loop, handle_receive_cb))
 
     def send(self, data, addr):
         self._socket.sendto(data, addr)
@@ -19,6 +19,7 @@ class UDPClient:
     def close_socket(self):
         print('Closing socket', file=sys.stderr)
         self._closed = True
+        self.task.cancel()
         self._socket.close()
 
     async def _handle_receive(self, loop, handle_receive_cb):

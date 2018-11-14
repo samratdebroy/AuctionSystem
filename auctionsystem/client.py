@@ -39,8 +39,6 @@ class AuctionClient:
             self.udp_client.close_socket()
 
     async def run(self):
-        i = 0
-
         # Send registration request to server before doing anything else
         # TODO: Maybe use something more sophisticated to make realistic names (maybe should be user input)
         self.client_name = ''.join(random.choices(string.ascii_letters + string.digits, k=10))  # Random letters and numbers
@@ -50,7 +48,8 @@ class AuctionClient:
 
         # TODO: Remove this while loop and replace with await self.listen_udp() or make self.run() into task
         while True:
-            for item_num, item in self.bidding_items.items():
+            for item_num in list(self.bidding_items.keys()):
+                item = self.bidding_items[item_num]
                 self.send_bid(self.request_num_counter, item_num, str(int(item['min']) + random.randint(1, 3000)))
                 await asyncio.sleep(1)
             self.request_num_counter += 1
@@ -68,7 +67,7 @@ class AuctionClient:
 
         if command == MESSAGE.REGISTERED.value:
             self.rcv_registered(req_num=data[1], name=data[2], ip_addr=data[3], port_num=data[4])
-        if command == MESSAGE.UNREGISTERED.value:
+        elif command == MESSAGE.UNREGISTERED.value:
             self.rcv_unregistered(req_num=data[1], reason=data[2])
         elif command == MESSAGE.DEREGISTER_CONFIRM.value:
             self.rcv_dereg_conf(req_num=data[1], name=data[2], ip_addr=data[3])
@@ -142,7 +141,7 @@ class AuctionClient:
         # Handle UDP message to confirm registration offer was made for item
         self.confirm_acknowledgement(req_num)
         self.offers[req_num] = {'item_num': item_num, 'desc': desc, 'min': min_price}
-        print('received dereg conf')
+        print('received offer conf')
 
     def rcv_offer_denied(self, req_num, reason):
         # The client could not register with the server
@@ -161,7 +160,7 @@ class AuctionClient:
             pass
 
     def rcv_new_item(self, item_num, desc, min_price, port):
-        self.bidding_items[item_num] = {'port_num': port, 'desc': desc, 'min': min_price,
+        self.bidding_items[item_num] = {'item_num':item_num, 'port_num': port, 'desc': desc, 'min': min_price,
                                         'highest': False, 'highest_bid': min_price, 'last_bid': 0}
         self.tcp_clients[item_num] = TCPClient(self.loop, self.handle_receive, (self.server_address[0], int(port)))
         # TODO: Choose whether or not to bid on this item
@@ -212,7 +211,7 @@ class AuctionClient:
         self.send_udp_message(name, ip_addr, desc, str(min_price), req_num=req_num, message=MESSAGE.OFFER)
 
     def send_bid(self, req_num, item_num, amount):
-        data_to_send = self.make_data_to_send(MESSAGE.BID, str(req_num), item_num, str(amount))
+        data_to_send = self.make_data_to_send(MESSAGE.BID.value, str(req_num), item_num, str(amount), self.client_name)
         self.tcp_clients[item_num].send(data_to_send)
 
     @staticmethod
@@ -229,7 +228,7 @@ class AuctionClient:
         #  Send UDP message to to the client
         data_to_send = self.make_data_to_send(message.value, str(req_num), *args)
         self.udp_client.send(data_to_send, self.server_address)
-        self.loop.create_task(self.ensure_ack_received(*args, req_num=req_num, message=message, time_delay=5))
+        self.loop.create_task(self.ensure_ack_received(*args, req_num=str(req_num), message=message, time_delay=5))
 
     async def ensure_ack_received(self, *args, req_num, message, time_delay):
         self.sent_messages[req_num] = args  # TODO: Assign args as a list or something to keep track of the messages
@@ -239,7 +238,8 @@ class AuctionClient:
 
         if self.sent_messages[req_num]:
             # We timed-out without receiving an acknowledgement
-            print('timeOut')
+            print('timeOut: Request number {} with args {} has not received acknowledgement'
+                  .format(req_num, self.sent_messages[req_num]))
             # TODO: Handle timeouts - resend the same info
 
     def confirm_acknowledgement(self, req_num):
