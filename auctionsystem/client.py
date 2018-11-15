@@ -101,25 +101,24 @@ class AuctionClient:
 
     def rcv_unregistered(self, req_num, reason):
         # The client could not register with the server
-        self.confirm_acknowledgement(req_num)
-        if reason == REASON.BAD_IP.val:
-            # TODO: handle a case of bad ip
-            pass
-        elif reason == REASON.ALREADY_REGISTERED.val:
-            # TODO: do nothing since you're already registered?
-            pass
+        msg_args = self.confirm_acknowledgement(req_num)
+        if reason == REASON.ALREADY_REGISTERED.val:
+            # Acknowledge the message and do nothing else
+            self.confirm_acknowledgement(req_num)
+            print('already registered')
         else:
-            # TODO: something went wrong - throw exception or something
-            pass
+            # Resend the register message - includes handling for bad IP
+            print('resending register message')
+            self.send_register(name=msg_args[0], ip_addr=msg_args[1], port_num=msg_args[2],
+                               resending=True, req_num_resend=req_num)
 
     def rcv_dereg_conf(self, req_num, name, ip_addr):
-        # TODO: Handle UDP message to confirm registration for the client
         self.confirm_acknowledgement(req_num)
         print('received dereg conf')
 
     def rcv_dereg_denied(self, req_num, reason):
         # The client could not register with the server
-        self.confirm_acknowledgement(req_num)
+        msg_args = self.confirm_acknowledgement(req_num)
         if reason == REASON.NOT_REGISTERED.val:
             # TODO: handle a case of not being registered
             pass
@@ -130,8 +129,10 @@ class AuctionClient:
             # TODO: Wait until all of your active bids end,until no longer have highest bid for any item ; stop bidding
             pass
         else:
-            # TODO: something went wrong - throw exception or something
-            pass
+            # Resend the deregister message - includes handling for bad IP
+            # Don't acknowledge in case the client gets unregistered again
+            print('resending deregister message')
+            self.send_deregister(name=msg_args[0], ip_addr=msg_args[1], resending=True, req_num_resend=req_num)
 
     def rcv_offer_conf(self, req_num, item_num, desc, min_price):
         # Handle UDP message to confirm registration offer was made for item
@@ -194,17 +195,20 @@ class AuctionClient:
 
     # Send Messages
 
-    def send_register(self, name, ip_addr, port_num):
+    def send_register(self, name, ip_addr, port_num, resending=False, req_num_resend=-1):
         #  Send UDP message to request registration to the server
-        self.send_udp_message(name, ip_addr, port_num, message=MESSAGE.REGISTER)
+        self.send_udp_message(name, ip_addr, port_num, message=MESSAGE.REGISTER,
+                              resending=resending, req_num_resend=req_num_resend)
 
-    def send_deregister(self, name, ip_addr):
+    def send_deregister(self, name, ip_addr, resending=False, req_num_resend=-1):
         #  Send UDP message to request deregistration to the server
-        self.send_udp_message(name, ip_addr, message=MESSAGE.DEREGISTER)
+        self.send_udp_message(name, ip_addr, message=MESSAGE.DEREGISTER,
+                              resending=resending, req_num_resend=req_num_resend)
 
-    def send_offer(self, name, ip_addr, desc, min_price):
+    def send_offer(self, name, ip_addr, desc, min_price, resending=False, req_num_resend=-1):
         #  Send UDP message to request deregistration to the server
-        self.send_udp_message(name, ip_addr, desc, str(min_price), message=MESSAGE.OFFER)
+        self.send_udp_message(name, ip_addr, desc, str(min_price), message=MESSAGE.OFFER,
+                              resending=resending, req_num_resend=req_num_resend)
 
     def send_bid(self, item_num, amount):
         data_to_send = self.make_data_to_send(MESSAGE.BID.value, str(self.request_num_counter), item_num, str(amount),
@@ -244,4 +248,6 @@ class AuctionClient:
             self.send_udp_message(args, message=message, resending=True, req_num_resend=int(req_num))
 
     def confirm_acknowledgement(self, req_num):
+        msg_args = self.sent_messages[req_num]
         self.sent_messages[req_num] = None
+        return msg_args
