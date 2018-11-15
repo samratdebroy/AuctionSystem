@@ -43,14 +43,12 @@ class AuctionClient:
         # TODO: Maybe use something more sophisticated to make realistic names (maybe should be user input)
         self.client_name = ''.join(random.choices(string.ascii_letters + string.digits, k=10))  # Random letters and numbers
         address = self.udp_client.address
-        self.send_register(self.request_num_counter, self.client_name, address[0], str(address[1]))
-        self.request_num_counter += 1
-
+        self.send_register(self.client_name, address[0], str(address[1]))
         # TODO: Remove this while loop and replace with await self.listen_udp() or make self.run() into task
         while True:
             for item_num in list(self.bidding_items.keys()):
                 item = self.bidding_items[item_num]
-                self.send_bid(self.request_num_counter, item_num, str(int(item['min']) + random.randint(1, 3000)))
+                self.send_bid(item_num, str(int(item['min']) + random.randint(1, 3000)))
                 await asyncio.sleep(1)
             self.request_num_counter += 1
             await asyncio.sleep(0.1)
@@ -97,9 +95,7 @@ class AuctionClient:
         self.confirm_acknowledgement(req_num)
         # TODO: REMOVE THIS, CONTROLLER STUFF SHOULD BE ELSEWHERE
         desc = ''.join(random.choices(string.ascii_letters + string.digits, k=30))  # Random letters and numbers
-        self.send_offer(self.request_num_counter, self.client_name, self.udp_client.address[0],
-                        desc, random.randint(0, 300))
-        self.request_num_counter += 1
+        self.send_offer(self.client_name, self.udp_client.address[0], desc, random.randint(0, 300))
 
         print('received registered')
 
@@ -198,21 +194,23 @@ class AuctionClient:
 
     # Send Messages
 
-    def send_register(self, req_num, name, ip_addr, port_num):
+    def send_register(self, name, ip_addr, port_num):
         #  Send UDP message to request registration to the server
-        self.send_udp_message(name, ip_addr, port_num, req_num=req_num, message=MESSAGE.REGISTER)
+        self.send_udp_message(name, ip_addr, port_num, message=MESSAGE.REGISTER)
 
-    def send_deregister(self, req_num, name, ip_addr):
+    def send_deregister(self, name, ip_addr):
         #  Send UDP message to request deregistration to the server
-        self.send_udp_message(name, ip_addr, req_num=req_num, message=MESSAGE.DEREGISTER)
+        self.send_udp_message(name, ip_addr, message=MESSAGE.DEREGISTER)
 
-    def send_offer(self, req_num, name, ip_addr, desc, min_price):
+    def send_offer(self, name, ip_addr, desc, min_price):
         #  Send UDP message to request deregistration to the server
-        self.send_udp_message(name, ip_addr, desc, str(min_price), req_num=req_num, message=MESSAGE.OFFER)
+        self.send_udp_message(name, ip_addr, desc, str(min_price), message=MESSAGE.OFFER)
 
-    def send_bid(self, req_num, item_num, amount):
-        data_to_send = self.make_data_to_send(MESSAGE.BID.value, str(req_num), item_num, str(amount), self.client_name)
+    def send_bid(self, item_num, amount):
+        data_to_send = self.make_data_to_send(MESSAGE.BID.value, str(self.request_num_counter), item_num, str(amount),
+                                              self.client_name)
         self.tcp_clients[item_num].send(data_to_send)
+        self.request_num_counter += 1
 
     @staticmethod
     def make_data_to_send(*argv):
@@ -224,11 +222,14 @@ class AuctionClient:
         data = PROTOCOL.DELIMITER.join(args)
         return data.encode()
 
-    def send_udp_message(self, *args, req_num, message):
+    def send_udp_message(self, *args, message, resending=False, req_num_resend=-1):
         #  Send UDP message to to the client
-        data_to_send = self.make_data_to_send(message.value, str(req_num), *args)
+        req_num = str(self.request_num_counter if not resending else req_num_resend)
+        data_to_send = self.make_data_to_send(message.value, req_num, *args)
         self.udp_client.send(data_to_send, self.server_address)
-        self.loop.create_task(self.ensure_ack_received(*args, req_num=str(req_num), message=message, time_delay=5))
+        self.loop.create_task(self.ensure_ack_received(*args, req_num=req_num, message=message, time_delay=5))
+        if not resending:
+            self.request_num_counter += 1
 
     async def ensure_ack_received(self, *args, req_num, message, time_delay):
         self.sent_messages[req_num] = args  # TODO: Assign args as a list or something to keep track of the messages
@@ -240,7 +241,7 @@ class AuctionClient:
             # We timed-out without receiving an acknowledgement
             print('timeOut: Request number {} with args {} has not received acknowledgement'
                   .format(req_num, self.sent_messages[req_num]))
-            # TODO: Handle timeouts - resend the same info
+            self.send_udp_message(args, message=message, resending=True, req_num_resend=int(req_num))
 
     def confirm_acknowledgement(self, req_num):
         self.sent_messages[req_num] = None
