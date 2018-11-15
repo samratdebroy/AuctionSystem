@@ -1,6 +1,6 @@
 from auctionsystem.udp.server import UDPServer
 from auctionsystem.tcp.server import TCPServer
-from auctionsystem.protocol import MESSAGE, REASON, PROTOCOL
+from auctionsystem.protocol import MESSAGE, REASON, PROTOCOL, AUCTION_CONSTS
 import queue
 import asyncio
 import pickle
@@ -180,7 +180,7 @@ class AuctionServer:
             validity = REASON.NOT_REGISTERED
 
         # The client is only allowed to make 3 simultaneous offers
-        if len([offer for key, offer in self.offers.items() if name == offer['offered_by']]) > 3:
+        if len([offer for key, offer in self.offers.items() if name == offer['offered_by']]) > AUCTION_CONSTS.OFFER_LIMIT:
             validity = REASON.OFFER_LIMIT
 
         # TODO: what if ip_address or data is damaged?

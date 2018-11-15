@@ -3,7 +3,7 @@
 
 from auctionsystem.udp.client import UDPClient
 from auctionsystem.tcp.client import TCPClient
-from auctionsystem.protocol import MESSAGE, PROTOCOL, REASON
+from auctionsystem.protocol import MESSAGE, PROTOCOL, REASON, AUCTION_CONSTS
 import asyncio
 
 # To generate random name for client
@@ -60,7 +60,9 @@ class AuctionClient:
         data = data.decode().split(PROTOCOL.DELIMITER)
 
         command = data[0]
-        if command is 'TEST':
+        if command is None:
+            pass
+        elif command is 'TEST':
             return
 
         if command == MESSAGE.REGISTERED.value:
@@ -134,6 +136,14 @@ class AuctionClient:
             print('resending deregister message')
             self.send_deregister(name=msg_args[0], ip_addr=msg_args[1], resending=True, req_num_resend=req_num)
 
+    # async def wait_for_dereg(self, reason):
+    #     if reason == REASON.ITEM_OFFERED.val:
+    #         # TODO: Wait until all of your offered bidding_items have their auctions closed, stop creating new offers
+    #         while True:
+    #     elif reason == REASON.ACTIVE_BID.val:
+    #         # TODO: Wait until all of your active bids end,until no longer have highest bid for any item ; stop bidding
+    #         pass
+
     def rcv_offer_conf(self, req_num, item_num, desc, min_price):
         # Handle UDP message to confirm registration offer was made for item
         self.confirm_acknowledgement(req_num)
@@ -142,19 +152,19 @@ class AuctionClient:
 
     def rcv_offer_denied(self, req_num, reason):
         # The client could not register with the server
-        self.confirm_acknowledgement(req_num)
+        msg_args = self.confirm_acknowledgement(req_num)
         if reason == REASON.NOT_REGISTERED.val:
             # TODO: handle a case of not being registered
             pass
         elif reason == REASON.OFFER_LIMIT.val:
-            # TODO: The server thinks you already have more than three active offers, is this correct?
-            pass
-        elif reason == REASON.BAD_IP.val:
-            # TODO: IP address sent to server was invalid or damaged
-            pass
+            # If the server was mistaken, resend the offer message
+            if len(self.offers) < AUCTION_CONSTS.OFFER_LIMIT:
+                self.send_offer(name=msg_args[0], ip_addr=msg_args[1], desc=msg_args[2], min_price=msg_args[3],
+                                resending=True, req_num_resend=req_num)
         else:
-            # TODO: something went wrong - throw exception or something
-            pass
+            # Resend offer for any other reason
+            self.send_offer(name=msg_args[0], ip_addr=msg_args[1], desc=msg_args[2], min_price=msg_args[3],
+                            resending=True, req_num_resend=req_num)
 
     def rcv_new_item(self, item_num, desc, min_price, port):
         self.bidding_items[item_num] = {'item_num':item_num, 'port_num': port, 'desc': desc, 'min': min_price,
@@ -170,18 +180,21 @@ class AuctionClient:
         # TODO: Choose whether or not to bid more on this item
 
     def rcv_win(self, item_num, name, ip_addr, port_num, amount):
-        # TODO: Handle victory? ...
+        # TODO: Have a list of items won by this client?
+        self.bidding_ended(item_num)
         print("You are the winner of item {}, bought for {}!".format(item_num, amount))
 
     def rcv_bid_over(self, item_num, amount):
+        self.bidding_ended(item_num)
+        print("You are NOT the winner of item {}, bought for {}!".format(item_num, amount))
+
+    def bidding_ended(self, item_num):
         del self.tcp_clients[item_num]
         del self.bidding_items[item_num]
-        print("You are NOT the winner of item {}, bought for {}!".format(item_num, amount))
 
     def rcv_sold_to(self, item_num, name, ip_addr, port, amount):
         # TODO: Don't do anything
         del self.offers[item_num]
-        pass
 
     def rcv_not_sold(self, item_num, reason):
         # TODO: Choose whether or not to bid on this item
