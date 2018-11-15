@@ -3,23 +3,27 @@ from multiprocessing import Process
 from auctionsystem import client, server
 
 
-# class NetworkTests(unittest.TestCase):
-#     pass
+class NetworkTests(unittest.TestCase):
 
+    @staticmethod
+    def test_basic_run():
+        process_server = Process(target=NetworkTests.start_server)
+        process_client = Process(target=NetworkTests.start_client)
 
-def start_server():
-    server.AuctionServer()
+        process_server.start()
+        process_client.start()
 
+    # Utility methods
 
-def start_client():
-    client.AuctionClient()
+    @staticmethod
+    def start_server():
+        server.AuctionServer()
+
+    @staticmethod
+    def start_client():
+        client.AuctionClient()
 
 
 if __name__ == '__main__':
-    process_server = Process(target=start_server)
-    process_client = Process(target=start_client)
-
-    process_server.start()
-    process_client.start()
-
+    unittest.main()
 
