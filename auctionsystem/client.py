@@ -1,5 +1,5 @@
 # TODO: clients have to be independent of each other
-# # TODO: I/O system -> automated or user input
+# TODO: I/O system -> user input
 
 from auctionsystem.udp.client import UDPClient
 from auctionsystem.tcp.client import TCPClient
@@ -116,6 +116,8 @@ class AuctionClient:
 
     def rcv_dereg_conf(self, req_num, name, ip_addr):
         self.confirm_acknowledgement(req_num)
+        self.tcp_clients.clear()  # Should close all of the connections
+        self.udp_client.close_socket()
         print('received dereg conf')
 
     def rcv_dereg_denied(self, req_num, reason):
@@ -132,17 +134,8 @@ class AuctionClient:
             pass
         else:
             # Resend the deregister message - includes handling for bad IP
-            # Don't acknowledge in case the client gets unregistered again
             print('resending deregister message')
             self.send_deregister(name=msg_args[0], ip_addr=msg_args[1], resending=True, req_num_resend=req_num)
-
-    # async def wait_for_dereg(self, reason):
-    #     if reason == REASON.ITEM_OFFERED.val:
-    #         # TODO: Wait until all of your offered bidding_items have their auctions closed, stop creating new offers
-    #         while True:
-    #     elif reason == REASON.ACTIVE_BID.val:
-    #         # TODO: Wait until all of your active bids end,until no longer have highest bid for any item ; stop bidding
-    #         pass
 
     def rcv_offer_conf(self, req_num, item_num, desc, min_price):
         # Handle UDP message to confirm registration offer was made for item
@@ -167,7 +160,7 @@ class AuctionClient:
                             resending=True, req_num_resend=req_num)
 
     def rcv_new_item(self, item_num, desc, min_price, port):
-        self.bidding_items[item_num] = {'item_num':item_num, 'port_num': port, 'desc': desc, 'min': min_price,
+        self.bidding_items[item_num] = {'item_num': item_num, 'port_num': port, 'desc': desc, 'min': min_price,
                                         'highest': False, 'highest_bid': min_price, 'last_bid': 0}
         self.tcp_clients[item_num] = TCPClient(self.loop, self.handle_receive, (self.server_address[0], int(port)))
         # TODO: Choose whether or not to bid on this item
@@ -180,7 +173,6 @@ class AuctionClient:
         # TODO: Choose whether or not to bid more on this item
 
     def rcv_win(self, item_num, name, ip_addr, port_num, amount):
-        # TODO: Have a list of items won by this client?
         self.bidding_ended(item_num)
         print("You are the winner of item {}, bought for {}!".format(item_num, amount))
 
