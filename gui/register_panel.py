@@ -1,5 +1,6 @@
 import tkinter as tk
 
+
 class RegisterPanel(tk.Frame):
 
     def __init__(self, master=None, register_cb=None):
@@ -26,5 +27,8 @@ class RegisterPanel(tk.Frame):
         self.register_label = tk.Button(master, text='Register', command=register_cb)
         self.register_label.grid(row=1, column=0)
 
-        self.response_label = tk.Label(master, text='')
-        self.response_label.grid(row=1, column=2, columnspan=2)
+        self.response_label = tk.Label(master, text='Response:')
+        self.response_label.grid(row=1, column=1)
+
+        self.response_msg_label = tk.Label(master, text='')
+        self.response_msg_label.grid(row=1, column=2, columnspan=2)
