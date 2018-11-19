@@ -102,7 +102,6 @@ class AuctionClient:
         self.confirm_acknowledgement(req_num)
         # TODO: REMOVE THIS, CONTROLLER STUFF SHOULD BE ELSEWHERE
         desc = ''.join(random.choices(string.ascii_letters + string.digits, k=30))  # Random letters and numbers
-        self.send_register(name, ip_addr, port_num)
         self.send_offer(self.client_name, self.udp_client.address[0], desc, random.randint(0, 300))
         print('received registered')
 
