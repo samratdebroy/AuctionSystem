@@ -1,6 +1,6 @@
 from auctionsystem.udp.server import UDPServer
 from auctionsystem.tcp.server import TCPServer
-from auctionsystem.protocol import MESSAGE, REASON, PROTOCOL
+from auctionsystem.protocol import MESSAGE, REASON, PROTOCOL, AUCTION_CONSTS
 import queue
 import asyncio
 import pickle
@@ -180,7 +180,8 @@ class AuctionServer:
             validity = REASON.NOT_REGISTERED
 
         # The client is only allowed to make 3 simultaneous offers
-        if len([offer for key, offer in self.offers.items() if name == offer['offered_by']]) > 3:
+        if len([offer for key, offer in self.offers.items() if name == offer['offered_by']]) \
+                >= AUCTION_CONSTS.OFFER_LIMIT:
             validity = REASON.OFFER_LIMIT
 
         # TODO: what if ip_address or data is damaged?
@@ -253,7 +254,7 @@ class AuctionServer:
             winner_addr = offer['highest_bid_addr']
             bid_amount = offer['highest_bid']
             data_to_send = self.make_data_to_send(MESSAGE.WIN.value, item_num, winner_name,
-                                                  winner_addr[0], winner_addr[1], bid_amount )
+                                                  winner_addr[0], winner_addr[1], bid_amount)
             self.tcp_servers[item_num].conn[winner_addr].send(data_to_send)
 
             # Signal that the bidding is over to all the other clients
@@ -290,7 +291,7 @@ class AuctionServer:
         if int(amount) > int(offer['highest_bid']):
             offer['highest_bid'] = amount
             offer['highest_bid_by'] = name
-            offer['highest_bid_addr'] = (addr[0], str(addr[1]))
+            offer['highest_bid_addr'] = (addr[0], addr[1])
             # Inform all auction participants for this item that there is a new highest bid
             self.sendall_highest_bid(item_num, amount)
 

@@ -44,3 +44,5 @@ class REASON(Enum):
         self.val = val
         self.str = string
 
+class AUCTION_CONSTS:
+    OFFER_LIMIT = 3
