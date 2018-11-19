@@ -180,7 +180,8 @@ class AuctionServer:
             validity = REASON.NOT_REGISTERED
 
         # The client is only allowed to make 3 simultaneous offers
-        if len([offer for key, offer in self.offers.items() if name == offer['offered_by']]) > AUCTION_CONSTS.OFFER_LIMIT:
+        if len([offer for key, offer in self.offers.items() if name == offer['offered_by']]) \
+                >= AUCTION_CONSTS.OFFER_LIMIT:
             validity = REASON.OFFER_LIMIT
 
         # TODO: what if ip_address or data is damaged?

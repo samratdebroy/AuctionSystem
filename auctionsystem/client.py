@@ -13,6 +13,7 @@ import random
 # Just to get fully qualified domain name
 import socket
 
+
 class AuctionClient:
     def __init__(self, server_address=(socket.getfqdn(), 8888)):
 
@@ -101,6 +102,7 @@ class AuctionClient:
         self.confirm_acknowledgement(req_num)
         # TODO: REMOVE THIS, CONTROLLER STUFF SHOULD BE ELSEWHERE
         desc = ''.join(random.choices(string.ascii_letters + string.digits, k=30))  # Random letters and numbers
+        self.send_register(name, ip_addr, port_num)
         self.send_offer(self.client_name, self.udp_client.address[0], desc, random.randint(0, 300))
         print('received registered')
 
@@ -108,8 +110,7 @@ class AuctionClient:
         # The client could not register with the server
         msg_args = self.confirm_acknowledgement(req_num)
         if reason == REASON.ALREADY_REGISTERED.val:
-            # Acknowledge the message and do nothing else
-            self.confirm_acknowledgement(req_num)
+            # TODO: do nothing
             print('already registered')
         else:
             # Resend the register message - includes handling for bad IP
@@ -166,11 +167,13 @@ class AuctionClient:
 
     def rcv_new_item(self, item_num, desc, min_price, port):
         if item_num in self.bidding_items.keys():
-            # TODO: Handle server recovery
-            # The server sent a new_item message for an item you already have,
-            # it prolly means server went down and recovered, you have to reinit your TCP Server for this item
-            # resend your last bid
-            pass
+            # Re-init this item's tcp client
+            del self.tcp_clients[item_num]
+            self.tcp_clients[item_num] = TCPClient(self.loop, self.handle_receive, (self.server_address[0], int(port)))
+
+            # Resend last bid
+            self.send_bid(item_num, self.bidding_items[item_num]['last_bid'])
+
         else:
             self.bidding_items[item_num] = {'item_num': item_num, 'port_num': port, 'desc': desc, 'min': min_price,
                                             'highest': False, 'highest_bid': min_price, 'last_bid': 0}
@@ -224,7 +227,7 @@ class AuctionClient:
 
     def send_offer(self, name, ip_addr, desc, min_price, resending=False, req_num_resend=-1):
         #  Send UDP message to request deregistration to the server
-        self.send_udp_message(name, ip_addr, desc, str(min_price), message=MESSAGE.OFFER,
+        self.send_udp_message(name, ip_addr, desc, min_price, message=MESSAGE.OFFER,
                               resending=resending, req_num_resend=req_num_resend)
 
     def send_bid(self, item_num, amount):
@@ -264,7 +267,7 @@ class AuctionClient:
             # We timed-out without receiving an acknowledgement
             print('timeOut: Request number {} with args {} has not received acknowledgement'
                   .format(req_num, self.sent_messages[req_num]))
-            self.send_udp_message(args, message=message, resending=True, req_num_resend=int(req_num))
+            self.send_udp_message(*args, message=message, resending=True, req_num_resend=int(req_num))
 
     def confirm_acknowledgement(self, req_num):
         msg_args = self.sent_messages[req_num]
