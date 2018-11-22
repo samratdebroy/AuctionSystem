@@ -12,12 +12,16 @@ class TCPServer:
             self.sock = connection
             self._send_queue = asyncio.Queue(loop=loop)
             self.tasks = []
-            # TODO: should I have a callback to handle cases where client connection is lost?
-            # TODO: Callback should handle what happens if we lose highest_bidder, seller
 
             # Create listener to receive data
             self.tasks.append(loop.create_task(self._handle_receive(loop, handle_receive_cb)))
             self.tasks.append(loop.create_task(self._handle_send(loop)))
+
+        def __del__(self):
+            self.sock.close()
+            # Stop listening for new data to send or receive
+            for task in self.tasks:
+                task.cancel()
 
         def send(self, data):
             # Add data to async queue to ensure it's sent in order
@@ -34,13 +38,17 @@ class TCPServer:
             while True:
                 # Send data to client asynchronously
                 data = await self._send_queue.get()
-                await loop.sock_sendall(self.sock, data)
-                print('Sent: {0} to {1}'.format(data, self.addr), file=sys.stderr)
-                self._send_queue.task_done()
+                try:
+                    await loop.sock_sendall(self.sock, data)
+                    print('Sent: {0} to {1}'.format(data, self.addr), file=sys.stderr)
+                    self._send_queue.task_done()
+                except OSError as err:
+                    print('Could not Send: {0} to {1} Client connection could not be reached'.format(data, self.addr),
+                          file=sys.stderr)
 
     def __init__(self, loop, handle_receive_cb, port_number=0):
 
-        self.conn = {}  # List of all valid connections
+        self.conn = {}  # Dict of all valid connections
         self._socket = self.get_tcp_server_socket(port_number)
 
         # Start listener for new connections
@@ -90,14 +98,15 @@ class TCPServer:
         self.receive_task.cancel()
 
         # Close each client connection
-        for conn in self.conn.values():
-            # Stop listening for new data to send or receive
-            for task in conn.tasks:
-                task.close()
-            conn.sock.close()
+        self.conn.clear()
 
         # Close this server's socket
         self._socket.close()
+
+    def close_connection(self, conn):
+        # Close this specific connection
+        print('Closing connection to {}'.format(conn.addr), file=sys.stderr)
+        del self.conn[conn.addr]
 
     def get_port_number(self):
         return str(self._socket.getsockname()[1])

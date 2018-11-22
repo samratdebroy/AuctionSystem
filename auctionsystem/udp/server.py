@@ -51,6 +51,9 @@ class UDPServer:
     async def _handle_receive(self, loop, handle_receive_cb):
         while True:
             data, addr = await self._async_recvfrom(loop, 1024)
+            if (data, addr) == (None, None):
+                # This means we received an ICMP Error, ignore this data
+                continue
             print('From {0} received: {1}'.format(addr, data), file=sys.stderr)
             handle_receive_cb(data, addr)
 
@@ -73,6 +76,12 @@ class UDPServer:
             data, addr = self._socket.recvfrom(n_bytes)
         except (BlockingIOError, InterruptedError):
             loop.add_reader(sock_file, self._async_recvfrom, loop, n_bytes, future, True)
+        except OSError as err:
+            # If we get this OSError, it is most likely because the remote host forcibly closed their socket
+            # In such a case, we can receive an ICMP error packet in the recvfrom after our last sendto failed to reach
+            # In our case, we can assume this probably means that the client was somehow forcibly closed
+            future.set_result((None, None))
+            return future
         else:
             future.set_result((data, addr))
         return future
