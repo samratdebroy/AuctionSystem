@@ -5,4 +5,5 @@ test.py
 auctionsystem/__pycache__/
 auctionsystem/tcp/__pycache__/
 auctionsystem/udp/__pycache__/
+gui/__pycache__/
 offers_file.pickle
