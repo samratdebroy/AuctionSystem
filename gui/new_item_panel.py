@@ -44,11 +44,15 @@ class NewItemPanel(tk.Frame):
         self.highest_label_val.grid(row=4, column=1)
 
         # Row 5
-        self.bid_label = tk.Label(self, text='Bid')
+        self.bid_label = tk.Label(self, text='Amount to Bid')
         self.bid_label.grid(row=5, column=0)
 
         self.bid_entry = tk.Entry(self)
         self.bid_entry.grid(row=5, column=1)
+
+        # Row 6
+        self.bid_button = tk.Button(self, text='Bid', command=bid_cb)
+        self.bid_button.grid(row=6, column=0)
 
         # Initial setting of labels
         self.update_fields()

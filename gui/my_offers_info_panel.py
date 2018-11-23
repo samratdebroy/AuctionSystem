@@ -29,7 +29,7 @@ class MyOffersInfoPanel(tk.Frame):
         self.status_label_val.grid(row=2, column=1)
 
         # Row 3
-        self.reoffer_button = tk.Button(text="Re-offer")
+        self.reoffer_button = tk.Button(text="Re-offer", command=reoffer_cb)
         self.reoffer_button.grid(row=3, column=0)
 
         # Initial setting of fields
