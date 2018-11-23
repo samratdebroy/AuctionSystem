@@ -3,10 +3,13 @@ import tkinter as tk
 
 class NewOfferPanel(tk.Frame):
 
-    def __init__(self, master=None, send_offfer_cb=None):
+    def __init__(self, master=None, send_offer_cb=None):
         super(NewOfferPanel, self).__init__(master)
         self.master = master
         self.grid()
+
+        # Fields
+        self.send_offer_cb = send_offer_cb
 
         # Create widgets
 
@@ -30,7 +33,7 @@ class NewOfferPanel(tk.Frame):
         self.min_price_entry.grid(row=3, column=1)
 
         # Row 4
-        self.put_up_offer_button = tk.Button(self, text='Put up for Auction', command=send_offfer_cb)
+        self.put_up_offer_button = tk.Button(self, text='Put up for Auction', command=self.put_up_offer_cmnd)
         self.put_up_offer_button.grid(row=4, column=0, columnspan=2)
 
         # Row 5
@@ -40,3 +43,6 @@ class NewOfferPanel(tk.Frame):
 
         self.response_msg_label = tk.Label(self, text='')
         self.response_msg_label.grid(row=5, column=1)
+
+    def put_up_offer_cmnd(self):
+        self.send_offer_cb()

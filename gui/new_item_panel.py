@@ -8,6 +8,9 @@ class NewItemPanel(tk.Frame):
         self.master = master
         self.grid()
 
+        # Fields
+        self.bid_cb = bid_cb
+
         # Create widgets
 
         # Row 0
@@ -51,7 +54,7 @@ class NewItemPanel(tk.Frame):
         self.bid_entry.grid(row=5, column=1)
 
         # Row 6
-        self.bid_button = tk.Button(self, text='Bid', command=bid_cb)
+        self.bid_button = tk.Button(self, text='Bid', command=self.bid_cmnd)
         self.bid_button.grid(row=6, column=0)
 
         # Initial setting of labels
@@ -63,3 +66,6 @@ class NewItemPanel(tk.Frame):
         self.min_price_label_val['text'] = '${}'.format(min_price)
         self.descr_label_val['text'] = descr
         self.highest_label_val['text'] = '${}'.format(highest)
+
+    def bid_cmnd(self):
+        self.bid_cb()

@@ -8,6 +8,9 @@ class MyOffersInfoPanel(tk.Frame):
         self.master = master
         self.grid()
 
+        # Fields
+        self.reoffer_cb = reoffer_cb
+
         # Create widgets
 
         # Row 0
@@ -29,7 +32,7 @@ class MyOffersInfoPanel(tk.Frame):
         self.status_label_val.grid(row=2, column=1)
 
         # Row 3
-        self.reoffer_button = tk.Button(text="Re-offer", command=reoffer_cb)
+        self.reoffer_button = tk.Button(self, text="Re-offer", command=self.reoffer_cmnd)
         self.reoffer_button.grid(row=3, column=0)
 
         # Initial setting of fields
@@ -39,3 +42,6 @@ class MyOffersInfoPanel(tk.Frame):
         self.item_num_label['text'] = 'Item {}'.format(item_num)
         self.min_price_label_val['text'] = '${}'.format(min_price)
         self.status_label_val['text'] = status
+
+    def reoffer_cmnd(self):
+        self.reoffer_cb()

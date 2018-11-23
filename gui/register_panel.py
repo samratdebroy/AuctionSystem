@@ -8,6 +8,9 @@ class RegisterPanel(tk.Frame):
         self.master = master
         self.grid()
 
+        # Fields
+        self.register_cb = register_cb
+
         # Create widgets
 
         # Row 0
@@ -24,7 +27,7 @@ class RegisterPanel(tk.Frame):
         self.server_ip_entry.grid(row=0, column=3)
 
         # Row 1
-        self.register_label = tk.Button(self, text='Register', command=register_cb)
+        self.register_label = tk.Button(self, text='Register', command=self.register_cmnd)
         self.register_label.grid(row=1, column=0)
 
         # TODO: Change to read only text, make method to fill text
@@ -33,3 +36,9 @@ class RegisterPanel(tk.Frame):
 
         self.response_msg_label = tk.Label(self, text='')
         self.response_msg_label.grid(row=1, column=2, columnspan=2)
+
+    def register_cmnd(self):
+        self.register_cb()
+
+
+

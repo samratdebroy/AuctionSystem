@@ -25,15 +25,17 @@ class AuctionClientGui(tk.Frame):
         self.items_list_panel = ItemsListPanel(master=self, bid_cb=default_cb)
         self.items_list_panel.grid(row=1, column=0)
 
-        self.ongoing_offers_panel = MyOffersPanel(master=self)
+        self.ongoing_offers_panel = MyOffersPanel(master=self, reoffer_cb=default_cb)
         self.ongoing_offers_panel.grid(row=1, column=1)
 
-        self.new_offer_panel = NewOfferPanel(master=self, send_offfer_cb=default_cb)
+        self.new_offer_panel = NewOfferPanel(master=self, send_offer_cb=default_cb)
         self.new_offer_panel.grid(row=1, column=2)
 
 
 def default_cb():
     print('Default callback!')
+
+
 
 
 if __name__ == '__main__':
