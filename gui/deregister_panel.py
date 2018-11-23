@@ -11,6 +11,7 @@ class DeregisterPanel(tk.Frame):
         # Create widgets
 
         # Row 0
+
         self.dereg_button = tk.Button(self, text='Deregister', command=dereg_cb)
         self.dereg_button.grid(row=0, column=0)
 
