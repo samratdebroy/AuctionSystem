@@ -2,6 +2,7 @@ import tkinter as tk
 from gui.register_panel import RegisterPanel
 from gui.deregister_panel import DeregisterPanel
 from gui.items_list_panel import ItemsListPanel
+from gui.ongoing_offers_panel import OngoingOffersPanel
 from gui.new_offer_panel import NewOfferPanel
 
 
@@ -25,8 +26,11 @@ class AuctionClientGui(tk.Frame):
         self.items_list_panel = ItemsListPanel(master=self)
         self.items_list_panel.grid(row=1, column=0)
 
+        self.ongoing_offers_panel = OngoingOffersPanel(master=self)
+        self.ongoing_offers_panel.grid(row=1, column=1)
+
         self.new_offer_panel = NewOfferPanel(master=self, send_offfer_cb=default_cb)
-        self.new_offer_panel.grid(row=1, column=1)  # TODO: Change column index so that it is on left most
+        self.new_offer_panel.grid(row=1, column=2)  # TODO: Change column index so that it is on left most
 
 
 def default_cb():
