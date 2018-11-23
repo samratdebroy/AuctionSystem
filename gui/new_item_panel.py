@@ -42,7 +42,7 @@ class NewItemPanel(tk.Frame):
         # Initial setting of labels
         self.update_fields()
 
-    def update_fields(self, item_num=0, name='', min_price=0, descr='', highest=0):
+    def update_fields(self, item_num=0, name='---', min_price=0, descr='---', highest=0):
         self.item_num_label['text'] = 'Item {}'.format(item_num)
         self.name_label['text'] = 'Offered by: {}'.format(name)
         self.min_price_label['text'] = 'Min: ${}'.format(min_price)

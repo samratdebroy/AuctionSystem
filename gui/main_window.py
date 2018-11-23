@@ -2,7 +2,7 @@ import tkinter as tk
 from gui.register_panel import RegisterPanel
 from gui.deregister_panel import DeregisterPanel
 from gui.items_list_panel import ItemsListPanel
-from gui.ongoing_offers_panel import OngoingOffersPanel
+from gui.my_offers_panel import MyOffersPanel
 from gui.new_offer_panel import NewOfferPanel
 
 
@@ -23,10 +23,10 @@ class AuctionClientGui(tk.Frame):
         self.dereg_panel.grid(row=0, column=1)
 
         # Row 1
-        self.items_list_panel = ItemsListPanel(master=self)
+        self.items_list_panel = ItemsListPanel(master=self, bid_cb=default_cb())
         self.items_list_panel.grid(row=1, column=0)
 
-        self.ongoing_offers_panel = OngoingOffersPanel(master=self)
+        self.ongoing_offers_panel = MyOffersPanel(master=self)
         self.ongoing_offers_panel.grid(row=1, column=1)
 
         self.new_offer_panel = NewOfferPanel(master=self, send_offfer_cb=default_cb)
