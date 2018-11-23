@@ -27,6 +27,7 @@ class RegisterPanel(tk.Frame):
         self.register_label = tk.Button(self, text='Register', command=register_cb)
         self.register_label.grid(row=1, column=0)
 
+        # TODO: Change to read only text, make method to fill text
         self.response_label = tk.Label(self, text='Response:')
         self.response_label.grid(row=1, column=1)
 
