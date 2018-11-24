@@ -3,13 +3,12 @@ import tkinter as tk
 
 class MyOffersInfoPanel(tk.Frame):
 
-    def __init__(self, master=None, reoffer_cb=None):
+    def __init__(self, master=None):
         super(MyOffersInfoPanel, self).__init__(master)
         self.master = master
         self.grid()
 
         # Fields
-        self.reoffer_cb = reoffer_cb
 
         # Create widgets
 
@@ -32,16 +31,17 @@ class MyOffersInfoPanel(tk.Frame):
         self.status_label_val.grid(row=2, column=1)
 
         # Row 3
-        self.reoffer_button = tk.Button(self, text="Re-offer", command=self.reoffer_cmnd)
-        self.reoffer_button.grid(row=3, column=0)
+        self.desc_label = tk.Label(self)
+        self.desc_label.grid(row=3, column=1)
+
+        self.desc_label_val = tk.Label(self)
+        self.desc_label_val.grid(row=3, column=1)
 
         # Initial setting of fields
         self.update_fields()
 
-    def update_fields(self, item_num=0, min_price=0, status='---'):
+    def update_fields(self, item_num='---', min_price='---', status='---', desc='---'):
         self.item_num_label['text'] = 'Item {}'.format(item_num)
         self.min_price_label_val['text'] = '${}'.format(min_price)
         self.status_label_val['text'] = status
-
-    def reoffer_cmnd(self):
-        self.reoffer_cb()
+        self.desc_label_val['text'] = desc

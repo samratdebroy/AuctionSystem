@@ -1,5 +1,5 @@
 import tkinter as tk
-
+import gui.gui_helper as helper
 
 class NewOfferPanel(tk.Frame):
 
@@ -45,7 +45,13 @@ class NewOfferPanel(tk.Frame):
         self.response_msg_label.grid(row=5, column=1)
 
     def put_up_offer_cmnd(self):
-        self.send_offer_cb()
+        desc = helper.get_truncated_text(self.descr_text, 100)
+        min = helper.get_truncated_entry(self.min_price_entry, 10)
+        if min.isdigit():
+            self.send_offer_cb(desc, min)
+        else:
+            # Todo: a real error message
+            print('Min value needs to be a valid number of less than 10 digits')
 
     def set_response_text(self, reason):
         self.response_msg_label['text'] = reason

@@ -47,7 +47,12 @@ class RegisterPanel(tk.Frame):
         name = helper.get_truncated_entry(self.name_entry, 10)
         server_ip = helper.get_truncated_entry(self.server_ip_entry, 41)
         port_num = helper.get_truncated_entry(self.server_port_num, 5)
-        self.register_cb(name, server_ip, port_num)
+        if port_num.isdigit():
+            self.register_cb(name, server_ip, port_num)
+        else:
+            # TODO: add real user error check
+            # TODO: check valid server address type
+            print('PORT NUMBER MUST BE A VALID NUMBER')
 
     def set_response_text(self, response):
         self.response_msg_label['text'] = response

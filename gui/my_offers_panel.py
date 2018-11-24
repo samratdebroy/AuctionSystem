@@ -1,13 +1,19 @@
 import tkinter as tk
 from gui.my_offers_info_panel import MyOffersInfoPanel
-
+import gui.gui_helper as helper
 
 class MyOffersPanel(tk.Frame):
 
-    def __init__(self, master=None, reoffer_cb=None):
+    def __init__(self, master=None, list_ongoing_sel_cb=None, list_ended_sel_cb=None):
         super(MyOffersPanel, self).__init__(master)
         self.master = master
         self.grid()
+
+        # Fields
+        self.selected_ongoing_item = ''
+        self.list_ongoing_sel_cb = list_ongoing_sel_cb
+        self.selected_ended_item = ''
+        self.list_ended_sel_cb = list_ended_sel_cb
 
         # Create Widgets
 
@@ -24,11 +30,33 @@ class MyOffersPanel(tk.Frame):
 
         # Row 2
         self.ongoing_offers_listbox = tk.Listbox(self)
+        self.ongoing_offers_listbox.event_generate(helper.SELECTION_EVENT_STR)
+        self.ongoing_offers_listbox.bind(helper.SELECTION_EVENT_STR, self.list_ongoing_sel_cb)
+        self.ongoing_offers_listbox.insert(tk.END, 'Item 0')
         self.ongoing_offers_listbox.grid(row=2, column=0)
 
         self.ended_offers_listbox = tk.Listbox(self)
+        self.ended_offers_listbox.event_generate(helper.SELECTION_EVENT_STR)
+        self.ended_offers_listbox.bind(helper.SELECTION_EVENT_STR, self.list_ended_sel_cb)
+        self.ended_offers_listbox.insert(tk.END, 'Item 0')
         self.ended_offers_listbox.grid(row=2, column=1)
 
         # Row 3
-        self.info_panel = MyOffersInfoPanel(self, reoffer_cb)
+        self.info_panel = MyOffersInfoPanel(self)
         self.info_panel.grid(row=3, column=0)
+
+    def selection_ongoing_cb(self, event):
+        self.selected_ongoing_item = event.widget.get(event.widget.curselection())
+        print(self.selected_ongoing_item)  # TODO: to remove
+        self.list_ongoing_sel_cb(self.selected_ongoing_item)  # Updates the info panel
+
+    def selection_ended_cb(self, event):
+        self.selected_ended_item = event.widget.get(event.widget.curselection())
+        print(self.selected_ended_item)  # TODO: to remove
+        self.list_ended_sel_cb(self.selected_ended_item)  # Updates the info panel
+
+    def add_new_ongoing_item(self, item_num):
+        self.ongoing_offers_listbox.insert(0, item_num)
+
+    def add_new_ended_item(self, item_num):
+        self.ended_offers_listbox.insert(0, item_num)

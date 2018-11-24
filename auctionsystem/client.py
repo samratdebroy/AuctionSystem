@@ -15,9 +15,12 @@ import socket
 
 
 class AuctionClient:
-    def __init__(self, name=None, server_address=(socket.getfqdn(), 8888), gui_cb=None):
+    def __init__(self, name=None, server_address=(socket.getfqdn(), 8888), gui_cb=None, loop=None):
 
-        self.loop = asyncio.get_event_loop()
+        if not gui_cb:
+            self.loop = asyncio.get_event_loop()
+        else:
+            self.loop = loop
 
         # Setup callback to GUI
         self.gui_cb = gui_cb
@@ -41,9 +44,7 @@ class AuctionClient:
         # Run the event loop
         if not self.gui_cb:
             self.loop.run_until_complete(self.run())
-        else:
-            self.loop.run_forever()
-        self.loop.close()
+            self.loop.close()
 
     def __del__(self):
         if self.udp_client is not None:
