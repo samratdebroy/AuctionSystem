@@ -1,6 +1,6 @@
 from auctionsystem.udp.server import UDPServer
 from auctionsystem.tcp.server import TCPServer
-from auctionsystem.protocol import MESSAGE, REASON, PROTOCOL
+from auctionsystem.protocol import MESSAGE, REASON, PROTOCOL, AUCTION_CONSTS
 import queue
 import asyncio
 import pickle
@@ -16,7 +16,8 @@ class AuctionServer:
 
         # Load the registration_table from file if it exists, else create it
         try:
-            self.registration_table = pickle.load(open(self.registration_file, "rb"))
+            if recover:
+                self.registration_table = pickle.load(open(self.registration_file, "rb"))
         except (OSError, IOError) as e:
             self.registration_table = dict()
             pickle.dump(self.registration_table, open(self.registration_file, "wb"))
@@ -25,14 +26,8 @@ class AuctionServer:
         self.offers_file = 'offers_file.pickle'
         # Load the offers from file if it exists, else create it
         try:
-            self.offers = pickle.load(open(self.offers_file, "rb"))
-            # TODO: Handle all previously created offers that were never finished
-            # Probably want to recreate TCP servers for each offered item and restart item's auction from the start
-            # Reset each field for each offer in the dict as if we're receiving new offers
-            # Signal the clients to change TCP connections to a new socket using a new new_item command
-            # Clients need to handle the fact it's a new_item command with an item_num for which they're already bidding
-            # They should all resend their last bid so we can re-establish the new highest_bid[_by]
-            # Clients should also cancel their previous connection if they haven't already
+            if recover:
+                self.offers = pickle.load(open(self.offers_file, "rb"))
         except (OSError, IOError) as e:
             self.offers = dict()
             pickle.dump(self.offers, open(self.offers_file, "wb"))
@@ -49,6 +44,20 @@ class AuctionServer:
         # Setup sockets
         self.udp_server = UDPServer(self.loop, self.handle_receive)
         self.tcp_servers = dict()
+
+        if recover and self.offers:
+            # Handle all previously created offers that were never finished
+            # Reset each field for each offer in the dict as if we're receiving new offers
+            # Signal the clients to change TCP connections to a new socket using a new new_item command
+            # Clients need to handle the fact it's a new_item command with an item_num they're already bidding on
+            # They should all resend their last bid so we can re-establish the new highest_bid[_by]
+            # Clients should also cancel their previous connection if they haven't already
+            for item_num, offer in self.offers.items():
+                self.offers[item_num]['highest_bid'] = self.offers[item_num]['min']
+                self.offers[item_num]['highest_bid_by'] = ''
+                self.offers[item_num]['highest_bid_addr'] = None
+                # Inform all clients that a new item is offered at the auction
+                self.sendall_new_item(self.offers[item_num])
 
         # Run the event loop
         self.loop.run_forever()
@@ -180,7 +189,8 @@ class AuctionServer:
             validity = REASON.NOT_REGISTERED
 
         # The client is only allowed to make 3 simultaneous offers
-        if len([offer for key, offer in self.offers.items() if name == offer['offered_by']]) > 3:
+        if len([offer for key, offer in self.offers.items() if name == offer['offered_by']]) \
+                >= AUCTION_CONSTS.OFFER_LIMIT:
             validity = REASON.OFFER_LIMIT
 
         # TODO: what if ip_address or data is damaged?
@@ -200,7 +210,7 @@ class AuctionServer:
             self.send_offer_confirm(req_num, name, offer, ip_addr, port_num)
 
             # Inform all clients that a new item is offered at the auction
-            self.sendall_new_item(name, offer)
+            self.sendall_new_item(offer)
         else:
             # Respond with why the client can't offer the item
             self.send_offer_denied(req_num, validity.val, ip_addr, port_num)
@@ -215,9 +225,8 @@ class AuctionServer:
         #  Send UDP message to deny offer to the client and explain why
         self.send_udp_message(req_num, reason, client_address=(ip_addr, int(port_num)), message=MESSAGE.OFFER_DENIED)
 
-    def sendall_new_item(self, name, offer):
+    def sendall_new_item(self, offer):
         #  Create new TCP socket to handle bidding for this item ; send to all clients
-        #  TODO: Create new TCP socket to handle bidding for this item ; send to all clients
         new_item_server = TCPServer(self.loop, self.handle_receive)
 
         # For each client connected to the server, send a UDP message to inform them of a new item up for bidding
@@ -253,7 +262,7 @@ class AuctionServer:
             winner_addr = offer['highest_bid_addr']
             bid_amount = offer['highest_bid']
             data_to_send = self.make_data_to_send(MESSAGE.WIN.value, item_num, winner_name,
-                                                  winner_addr[0], winner_addr[1], bid_amount )
+                                                  winner_addr[0], winner_addr[1], bid_amount)
             self.tcp_servers[item_num].conn[winner_addr].send(data_to_send)
 
             # Signal that the bidding is over to all the other clients
@@ -290,7 +299,7 @@ class AuctionServer:
         if int(amount) > int(offer['highest_bid']):
             offer['highest_bid'] = amount
             offer['highest_bid_by'] = name
-            offer['highest_bid_addr'] = (addr[0], str(addr[1]))
+            offer['highest_bid_addr'] = (addr[0], addr[1])
             # Inform all auction participants for this item that there is a new highest bid
             self.sendall_highest_bid(item_num, amount)
 

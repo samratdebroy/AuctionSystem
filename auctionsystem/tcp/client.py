@@ -11,7 +11,7 @@ class TCPClient:
         self._send_queue = asyncio.Queue(loop=loop)
 
         self.tasks = []
-        loop.create_task(self.initialize_client(loop, handle_receive_cb))
+        self.tasks.append(loop.create_task(self.initialize_client(loop, handle_receive_cb)))
 
     def __del__(self):
         self.close_connections()

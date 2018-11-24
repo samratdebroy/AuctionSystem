@@ -1,9 +1,9 @@
 # TODO: clients have to be independent of each other
-# # TODO: I/O system -> automated or user input
+# TODO: I/O system -> user input
 
 from auctionsystem.udp.client import UDPClient
 from auctionsystem.tcp.client import TCPClient
-from auctionsystem.protocol import MESSAGE, PROTOCOL, REASON
+from auctionsystem.protocol import MESSAGE, PROTOCOL, REASON, AUCTION_CONSTS
 import asyncio
 
 # To generate random name for client
@@ -12,6 +12,7 @@ import random
 
 # Just to get fully qualified domain name
 import socket
+
 
 class AuctionClient:
     def __init__(self, name=None, server_address=(socket.getfqdn(), 8888), gui_cb=None):
@@ -51,20 +52,23 @@ class AuctionClient:
     async def run(self):
         # Send registration request to server before doing anything else
         address = self.udp_client.address
-        self.send_register(self.request_num_counter, self.client_name, address[0], str(address[1]))
-        self.request_num_counter += 1
-
+        self.send_register(self.client_name, address[0], str(address[1]))
         # TODO: Remove this while loop and replace with await self.listen_udp() or make self.run() into task
         while True:
             for item_num in list(self.bidding_items.keys()):
                 item = self.bidding_items[item_num]
-                self.send_bid(self.request_num_counter, item_num, str(int(item['min']) + random.randint(1, 3000)))
+                self.send_bid(item_num, str(int(item['min']) + random.randint(1, 3000)))
                 await asyncio.sleep(1)
-            self.request_num_counter += 1
             await asyncio.sleep(0.1)
+
 
     def handle_receive(self, data, addr=None):
         # TODO: Handle the case where data[0] is damaged or is None
+
+        if data is None:
+            # Other side has disconnected
+            # TODO: Handle disconnection
+            pass
 
         # Parse the data
         data = data.decode().split(PROTOCOL.DELIMITER)
@@ -154,12 +158,21 @@ class AuctionClient:
             print('Offer was denied because {}'.format(reason.str))
 
     def rcv_new_item(self, item_num, desc, min_price, port):
-        self.bidding_items[item_num] = {'item_num':item_num, 'port_num': port, 'desc': desc, 'min': min_price,
-                                        'highest': False, 'highest_bid': min_price, 'last_bid': 0}
-        self.tcp_clients[item_num] = TCPClient(self.loop, self.handle_receive, (self.server_address[0], int(port)))
+        if item_num in self.bidding_items.keys():
+            # If the NEW_ITEM message is received for an item we're already bidding on, server might be recovering
+            # Re-init this item's tcp client
+            del self.tcp_clients[item_num]
+            self.tcp_clients[item_num] = TCPClient(self.loop, self.handle_receive, (self.server_address[0], int(port)))
 
-        if self.gui_cb:
-            self.gui_cb(MESSAGE.NEW_ITEM, item_num)
+            # Resend last bid
+            self.send_bid(item_num, self.bidding_items[item_num]['last_bid'])
+        else:
+            self.bidding_items[item_num] = {'item_num':item_num, 'port_num': port, 'desc': desc, 'min': min_price,
+                                            'highest': False, 'highest_bid': min_price, 'last_bid': 0}
+            self.tcp_clients[item_num] = TCPClient(self.loop, self.handle_receive, (self.server_address[0], int(port)))
+
+            if self.gui_cb:
+                self.gui_cb(MESSAGE.NEW_ITEM, item_num)
 
     def rcv_highest(self, item_num, amount):
         self.bidding_items[item_num]['highest_bid'] = amount
@@ -178,15 +191,19 @@ class AuctionClient:
             self.gui_cb(MESSAGE.WIN, item_num, amount)
         else:
             print("You are the winner of item {}, bought for {}!".format(item_num, amount))
+        self.bidding_ended(item_num)
 
     def rcv_bid_over(self, item_num, amount):
         # Item has been sold to another client
-        del self.tcp_clients[item_num]
-        del self.bidding_items[item_num]
+        self.bidding_ended(item_num)
         if self.gui_cb:
             self.gui_cb(MESSAGE.WIN, item_num, amount)
         else:
             print("You are NOT the winner of item {}, bought for {}!".format(item_num, amount))
+
+    def bidding_ended(self, item_num):
+        del self.tcp_clients[item_num]
+        del self.bidding_items[item_num]
 
     def rcv_sold_to(self, item_num, name, ip_addr, port, amount):
         # Figure out which client won the item
@@ -204,22 +221,28 @@ class AuctionClient:
             print('Item {}, was not sold because {}'.format(item_num, reason.str))
 
     # Send Messages
-
-    def send_register(self, req_num, name, ip_addr, port_num):
+    def send_register(self, name, ip_addr, port_num, resending=False, req_num_resend=-1):
         #  Send UDP message to request registration to the server
-        self.send_udp_message(name, ip_addr, port_num, req_num=req_num, message=MESSAGE.REGISTER)
+        self.send_udp_message(name, ip_addr, port_num, message=MESSAGE.REGISTER,
+                              resending=resending, req_num_resend=req_num_resend)
 
-    def send_deregister(self, req_num, name, ip_addr):
+    def send_deregister(self, name, ip_addr, resending=False, req_num_resend=-1):
         #  Send UDP message to request deregistration to the server
-        self.send_udp_message(name, ip_addr, req_num=req_num, message=MESSAGE.DEREGISTER)
+        self.send_udp_message(name, ip_addr, message=MESSAGE.DEREGISTER,
+                              resending=resending, req_num_resend=req_num_resend)
 
-    def send_offer(self, req_num, name, ip_addr, desc, min_price):
+    def send_offer(self, name, ip_addr, desc, min_price, resending=False, req_num_resend=-1):
         #  Send UDP message to request deregistration to the server
-        self.send_udp_message(name, ip_addr, desc, str(min_price), req_num=req_num, message=MESSAGE.OFFER)
+        self.send_udp_message(name, ip_addr, desc, min_price, message=MESSAGE.OFFER,
+                              resending=resending, req_num_resend=req_num_resend)
 
-    def send_bid(self, req_num, item_num, amount):
-        data_to_send = self.make_data_to_send(MESSAGE.BID.value, str(req_num), item_num, str(amount), self.client_name)
+    def send_bid(self, item_num, amount):
+        data_to_send = self.make_data_to_send(MESSAGE.BID.value, self.request_num_counter, item_num, amount,
+                                              self.client_name)
         self.tcp_clients[item_num].send(data_to_send)
+        if int(amount) > int(self.bidding_items[item_num]['last_bid']):
+            self.bidding_items[item_num]['last_bid'] = amount
+        self.request_num_counter += 1
 
     @staticmethod
     def make_data_to_send(*argv):
@@ -231,11 +254,14 @@ class AuctionClient:
         data = PROTOCOL.DELIMITER.join(args)
         return data.encode()
 
-    def send_udp_message(self, *args, req_num, message):
+    def send_udp_message(self, *args, message, resending=False, req_num_resend=-1):
         #  Send UDP message to to the client
-        data_to_send = self.make_data_to_send(message.value, str(req_num), *args)
+        req_num = str(self.request_num_counter if not resending else req_num_resend)
+        data_to_send = self.make_data_to_send(message.value, req_num, *args)
         self.udp_client.send(data_to_send, self.server_address)
-        self.loop.create_task(self.ensure_ack_received(*args, req_num=str(req_num), message=message, time_delay=5))
+        self.loop.create_task(self.ensure_ack_received(*args, req_num=req_num, message=message, time_delay=5))
+        if not resending:
+            self.request_num_counter += 1
 
     async def ensure_ack_received(self, *args, req_num, message, time_delay):
         self.sent_messages[req_num] = args  # TODO: Assign args as a list or something to keep track of the messages
@@ -247,7 +273,9 @@ class AuctionClient:
             # We timed-out without receiving an acknowledgement
             print('timeOut: Request number {} with args {} has not received acknowledgement'
                   .format(req_num, self.sent_messages[req_num]))
-            # TODO: Handle timeouts - resend the same info
+            self.send_udp_message(*args, message=message, resending=True, req_num_resend=int(req_num))
 
     def confirm_acknowledgement(self, req_num):
+        msg_args = self.sent_messages[req_num]
         self.sent_messages[req_num] = None
+        return msg_args
