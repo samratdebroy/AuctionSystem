@@ -46,3 +46,6 @@ class NewOfferPanel(tk.Frame):
 
     def put_up_offer_cmnd(self):
         self.send_offer_cb()
+
+    def set_response_text(self, reason):
+        self.response_msg_label['text'] = reason

@@ -14,9 +14,16 @@ import random
 import socket
 
 class AuctionClient:
-    def __init__(self, server_address=(socket.getfqdn(), 8888)):
+    def __init__(self, name=None, server_address=(socket.getfqdn(), 8888), gui_cb=None):
 
         self.loop = asyncio.get_event_loop()
+
+        # Setup callback to GUI
+        self.gui_cb = gui_cb
+        self.client_name = name
+        if not self.client_name:
+            self.client_name = ''.join(
+                random.choices(string.ascii_letters + string.digits, k=10))  # Random letters and numbers
 
         # Setup sockets
         self.server_address = server_address
@@ -31,7 +38,10 @@ class AuctionClient:
         self.request_num_counter = 0
 
         # Run the event loop
-        self.loop.run_until_complete(self.run())
+        if not self.gui_cb:
+            self.loop.run_until_complete(self.run())
+        else:
+            self.loop.run_forever()
         self.loop.close()
 
     def __del__(self):
@@ -40,8 +50,6 @@ class AuctionClient:
 
     async def run(self):
         # Send registration request to server before doing anything else
-        # TODO: Maybe use something more sophisticated to make realistic names (maybe should be user input)
-        self.client_name = ''.join(random.choices(string.ascii_letters + string.digits, k=10))  # Random letters and numbers
         address = self.udp_client.address
         self.send_register(self.request_num_counter, self.client_name, address[0], str(address[1]))
         self.request_num_counter += 1
@@ -101,100 +109,99 @@ class AuctionClient:
                         desc, random.randint(0, 300))
         self.request_num_counter += 1
 
-        print('received registered')
+        if self.gui_cb:
+            self.gui_cb(MESSAGE.REGISTERED)
+        else:
+            print('received registered')
 
     def rcv_unregistered(self, req_num, reason):
         # The client could not register with the server
         self.confirm_acknowledgement(req_num)
-        if reason == REASON.BAD_IP.val:
-            # TODO: handle a case of bad ip
-            pass
-        elif reason == REASON.ALREADY_REGISTERED.val:
-            # TODO: do nothing since you're already registered?
-            pass
+        if self.gui_cb:
+            self.gui_cb(MESSAGE.UNREGISTERED, reason)
         else:
-            # TODO: something went wrong - throw exception or something
-            pass
+            print('Could not register because {}'.format(reason.str))
 
     def rcv_dereg_conf(self, req_num, name, ip_addr):
-        # TODO: Handle UDP message to confirm registration for the client
+        # Handle UDP message to confirm registration for the client
         self.confirm_acknowledgement(req_num)
-        print('received dereg conf')
+        if self.gui_cb:
+            self.gui_cb(MESSAGE.DEREGISTER_CONFIRM)
+        else:
+            print('Successfully registered')
 
     def rcv_dereg_denied(self, req_num, reason):
         # The client could not register with the server
         self.confirm_acknowledgement(req_num)
-        if reason == REASON.NOT_REGISTERED.val:
-            # TODO: handle a case of not being registered
-            pass
-        elif reason == REASON.ITEM_OFFERED.val:
-            # TODO: Wait until all of your offered bidding_items have their auctions closed, stop creating new offers
-            pass
-        elif reason == REASON.ACTIVE_BID.val:
-            # TODO: Wait until all of your active bids end,until no longer have highest bid for any item ; stop bidding
-            pass
+        if self.gui_cb:
+            self.gui_cb(MESSAGE.DEREGISTER_DENIED, reason)
         else:
-            # TODO: something went wrong - throw exception or something
-            pass
+            print('Deregistration was denied because {}'.format(reason.str))
 
     def rcv_offer_conf(self, req_num, item_num, desc, min_price):
         # Handle UDP message to confirm registration offer was made for item
         self.confirm_acknowledgement(req_num)
         self.offers[req_num] = {'item_num': item_num, 'desc': desc, 'min': min_price}
-        print('received offer conf')
+        if self.gui_cb:
+            self.gui_cb(MESSAGE.OFFER_CONFIRM, item_num, desc, min_price)
 
     def rcv_offer_denied(self, req_num, reason):
         # The client could not register with the server
         self.confirm_acknowledgement(req_num)
-        if reason == REASON.NOT_REGISTERED.val:
-            # TODO: handle a case of not being registered
-            pass
-        elif reason == REASON.OFFER_LIMIT.val:
-            # TODO: The server thinks you already have more than three active offers, is this correct?
-            pass
-        elif reason == REASON.BAD_IP.val:
-            # TODO: IP address sent to server was invalid or damaged
-            pass
+        if self.gui_cb:
+            self.gui_cb(MESSAGE.OFFER_DENIED, reason)
         else:
-            # TODO: something went wrong - throw exception or something
-            pass
+            print('Offer was denied because {}'.format(reason.str))
 
     def rcv_new_item(self, item_num, desc, min_price, port):
         self.bidding_items[item_num] = {'item_num':item_num, 'port_num': port, 'desc': desc, 'min': min_price,
                                         'highest': False, 'highest_bid': min_price, 'last_bid': 0}
         self.tcp_clients[item_num] = TCPClient(self.loop, self.handle_receive, (self.server_address[0], int(port)))
-        # TODO: Choose whether or not to bid on this item
+
+        if self.gui_cb:
+            self.gui_cb(MESSAGE.NEW_ITEM, item_num)
 
     def rcv_highest(self, item_num, amount):
+        self.bidding_items[item_num]['highest_bid'] = amount
         if amount == self.bidding_items[item_num]['last_bid']:
             self.bidding_items[item_num]['highest'] = True
         else:
             self.bidding_items[item_num]['highest'] = False
-        # TODO: Choose whether or not to bid more on this item
+
+        # Choose whether or not to bid more on this item
+        if self.gui_cb:
+            self.gui_cb(MESSAGE.HIGHEST, item_num)
 
     def rcv_win(self, item_num, name, ip_addr, port_num, amount):
-        # TODO: Handle victory? ...
-        print("You are the winner of item {}, bought for {}!".format(item_num, amount))
+        # Handle victory
+        if self.gui_cb:
+            self.gui_cb(MESSAGE.WIN, item_num, amount)
+        else:
+            print("You are the winner of item {}, bought for {}!".format(item_num, amount))
 
     def rcv_bid_over(self, item_num, amount):
+        # Item has been sold to another client
         del self.tcp_clients[item_num]
         del self.bidding_items[item_num]
-        print("You are NOT the winner of item {}, bought for {}!".format(item_num, amount))
+        if self.gui_cb:
+            self.gui_cb(MESSAGE.WIN, item_num, amount)
+        else:
+            print("You are NOT the winner of item {}, bought for {}!".format(item_num, amount))
 
     def rcv_sold_to(self, item_num, name, ip_addr, port, amount):
-        # TODO: Don't do anything
+        # Figure out which client won the item
         del self.offers[item_num]
-        pass
+        if self.gui_cb:
+            self.gui_cb(MESSAGE.SOLD_TO, item_num, name, ip_addr, port, amount)
+        else:
+            print('Winner of item {}, for {}, is {}, at {}:{}'.format(item_num, amount, name, ip_addr, port))
 
     def rcv_not_sold(self, item_num, reason):
         # TODO: Choose whether or not to bid on this item
-        if reason == REASON.NO_VALID_BIDS.val:
-            # TODO: handle a case of not having a winner due to invalid bids
-            # (Could put it up for offer again with smaller minimum amount)
-            pass
+        if self.gui_cb:
+            self.gui_cb(MESSAGE.NOT_SOLD, reason)
         else:
-            # TODO: something went wrong - throw exception or something
-            pass
+            print('Item {}, was not sold because {}'.format(item_num, reason.str))
 
     # Send Messages
 

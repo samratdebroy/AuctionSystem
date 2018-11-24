@@ -27,3 +27,6 @@ class DeregisterPanel(tk.Frame):
 
     def dereg_cmnd(self):
         self.dereg_cb()
+
+    def set_response_text(self, response):
+        self.response_msg_label['text'] = response
