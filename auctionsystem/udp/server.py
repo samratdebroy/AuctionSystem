@@ -34,7 +34,7 @@ class UDPServer:
             print('Failed to create server socket. Error: {0}'.format(err))
             sys.exit()
 
-        ip_address = ''  # Get fully qualified domain name
+        ip_address = socket.getfqdn()  # Get fully qualified domain name
         server_address = (ip_address, port_number)
 
         # Bind the socket to the port

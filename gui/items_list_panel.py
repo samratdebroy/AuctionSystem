@@ -24,7 +24,6 @@ class ItemsListPanel(tk.Frame):
         self.items_listbox = tk.Listbox(self)
         self.items_listbox.event_generate(helper.SELECTION_EVENT_STR)
         self.items_listbox.bind(helper.SELECTION_EVENT_STR, self.selection_cb)
-        self.items_listbox.insert(tk.END, 'Item 0')
         self.items_listbox.grid(row=1, column=0)
 
         # Row 2
@@ -33,8 +32,8 @@ class ItemsListPanel(tk.Frame):
 
     def selection_cb(self, event):
         self.selected_item = event.widget.get(event.widget.curselection())
-        print(self.selected_item)  # TODO: to remove
-        self.list_sel_cb(self.selected_item)  # Updates the new item panel
+        # See AuctionClientGui's bidding_item_sel_cb function
+        self.list_sel_cb(self.selected_item)
 
     def add_new_item(self, item_num):
         self.items_listbox.insert(0, item_num)

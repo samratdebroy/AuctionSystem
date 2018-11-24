@@ -23,27 +23,27 @@ class AuctionClientGui(tk.Frame):
 
         # Fields
         self.client = None
+        self.offers_history = {}
 
         # Row 0
         self.reg_panel = RegisterPanel(master=self, register_cb=self.register_cb)
         self.reg_panel.grid(row=0, column=0)
 
-        self.dereg_panel = DeregisterPanel(master=self, dereg_cb=self.default_cb)
+        self.dereg_panel = DeregisterPanel(master=self, dereg_cb=self.deregister_cb)
         self.dereg_panel.grid(row=0, column=1)
 
         # Row 1
-        self.items_list_panel = ItemsListPanel(master=self, list_sel_cb=self.bidding_item_sel_cb,
-                                               bid_cb=self.default_cb)
+        self.items_list_panel = ItemsListPanel(master=self, list_sel_cb=self.bidding_item_sel_cb, bid_cb=self.bid_cb)
         self.items_list_panel.grid(row=1, column=0)
 
-        self.ongoing_offers_panel = MyOffersPanel(master=self, list_ongoing_sel_cb=self.ongoing_item_sel_cb,
-                                                  list_ended_sel_cb=self.ended_item_sel_cb)
-        self.ongoing_offers_panel.grid(row=1, column=1)
+        self.my_offers_panel = MyOffersPanel(master=self, list_ongoing_sel_cb=self.ongoing_item_sel_cb,
+                                             list_ended_sel_cb=self.ended_item_sel_cb)
+        self.my_offers_panel.grid(row=1, column=1)
 
-        self.new_offer_panel = NewOfferPanel(master=self, send_offer_cb=self.default_cb)
+        self.new_offer_panel = NewOfferPanel(master=self, send_offer_cb=self.send_offer_cb)
         self.new_offer_panel.grid(row=1, column=2)
 
-        self.non_reg_panels = [self.dereg_panel, self.items_list_panel, self.ongoing_offers_panel, self.new_offer_panel]
+        self.non_reg_panels = [self.dereg_panel, self.items_list_panel, self.my_offers_panel, self.new_offer_panel]
         self.activate_client_interface(False)
 
     # Recursively sets a widget and all of its children disabled or non-disabled
@@ -69,11 +69,16 @@ class AuctionClientGui(tk.Frame):
     def deregister_cb(self):
         self.client.send_deregister(self.client.client_name, self.client.udp_client.address[0])
 
-    def offer_cb(self, desc, min_price):
+    def send_offer_cb(self, desc, min_price):
         self.client.send_offer(self.client.client_name, self.client.udp_client.address[0], desc, min_price)
 
     def bid_cb(self, item_num, amount):
         self.client.send_bid(item_num, amount, self.client.client_name)
+
+        # We want to keep a record of items that we are bidding on
+        if item_num not in self.offers_history:
+            self.add_new_offer_history(item_num, self.client.bidding_items[item_num]['min'],
+                                       self.client.bidding_items[item_num]['desc'])
 
     # Listbox callbacks
 
@@ -81,39 +86,36 @@ class AuctionClientGui(tk.Frame):
         self.update_new_item_panel(item_num)
 
     def ongoing_item_sel_cb(self, item_num):
-        pass
+        self.update_offer_info_panel(item_num)
 
     def ended_item_sel_cb(self, item_num):
-        pass
-
-    def default_cb(self):
-        print('Default callback!')
+        self.update_offer_info_panel(item_num)
 
     def rcv_msg(self, command, *args):
 
-        if command == MESSAGE.REGISTERED.value:
+        if command == MESSAGE.REGISTERED:
             self.activate_client_interface(True)
-        elif command == MESSAGE.UNREGISTERED.value:
+        elif command == MESSAGE.UNREGISTERED:
             self.rcv_unregistered(reason=args[0])
-        elif command == MESSAGE.DEREGISTER_CONFIRM.value:
+        elif command == MESSAGE.DEREGISTER_CONFIRM:
             self.activate_client_interface(False)
-        elif command == MESSAGE.DEREGISTER_DENIED.value:
+        elif command == MESSAGE.DEREGISTER_DENIED:
             self.rcv_dereg_denied(reason=args[0])
-        elif command == MESSAGE.OFFER_CONFIRM.value:
+        elif command == MESSAGE.OFFER_CONFIRM:
             self.rcv_offer_conf(item_num=args[0])
-        elif command == MESSAGE.OFFER_DENIED.value:
+        elif command == MESSAGE.OFFER_DENIED:
             self.rcv_offer_denied(reason=args[0])
-        elif command == MESSAGE.NEW_ITEM.value:
+        elif command == MESSAGE.NEW_ITEM:
             self.rcv_new_item(item_num=args[0])
-        elif command == MESSAGE.HIGHEST.value:
+        elif command == MESSAGE.HIGHEST:
             self.rcv_highest(item_num=args[0])
-        elif command == MESSAGE.WIN.value:
+        elif command == MESSAGE.WIN:
             self.rcv_win(item_num=args[0], amount=args[1])
-        elif command == MESSAGE.BID_OVER.value:
+        elif command == MESSAGE.BID_OVER:
             self.rcv_bid_over(item_num=args[0], amount=args[1])
-        elif command == MESSAGE.SOLD_TO.value:
+        elif command == MESSAGE.SOLD_TO:
             self.rcv_sold_to(item_num=args[0], name=args[1], ip_addr=args[2], port=args[3], amount=args[4])
-        elif command == MESSAGE.NOT_SOLD.value:
+        elif command == MESSAGE.NOT_SOLD:
             self.rcv_not_sold(item_num=args[0], reason=args[1])
 
     # Message Functions
@@ -136,7 +138,8 @@ class AuctionClientGui(tk.Frame):
         self.dereg_panel.set_response_text(reason)
 
     def rcv_offer_conf(self, item_num):
-        self.ongoing_offers_panel.add_new_ongoing_item(item_num)
+        self.my_offers_panel.add_new_ongoing_item(item_num)
+        self.add_new_offer_history(item_num, self.client.offers[item_num]['min'], self.client.offers[item_num]['desc'])
 
     def rcv_offer_denied(self, reason):
         self.new_offer_panel.set_response_text(reason)
@@ -148,19 +151,22 @@ class AuctionClientGui(tk.Frame):
         if self.items_list_panel.selected_item == item_num:
             self.update_new_item_panel(item_num)
 
-    # TODO: Implement the history feature (add tuples to a list, with tuple containing all the info)
-    # TODO: Make that list in this class, and store the tupls in it
     def rcv_win(self, item_num, amount):
-        pass
+        status = 'You have won this item for ${}.'.format(amount)
+        self.add_offer_history_to_list(item_num, status)
 
     def rcv_bid_over(self, item_num, amount):
-        pass
+        status = 'This item has been sold for ${}.'.format(amount)
+        self.add_offer_history_to_list(item_num, status)
 
     def rcv_sold_to(self, item_num, name, ip_addr, port, amount):
-        pass
+        status = 'This item has been sold to {name}, located at ' \
+                 '{ip_addr}:{port} for ${amount}.'.format(name=name, ip_addr=ip_addr, port=port, amount=amount)
+        self.add_offer_history_to_list(item_num, status)
 
     def rcv_not_sold(self, item_num, reason):
-        pass
+        status = 'This item has been not been sold because: {}'.format(reason)
+        self.add_offer_history_to_list(item_num, status)
 
     # Useful functions
 
@@ -171,6 +177,19 @@ class AuctionClientGui(tk.Frame):
                                                                descr=self.client.bidding_items['desc'],
                                                                highest=self.client.bidding_items['highest_bid'])
 
+    def update_offer_info_panel(self, item_num):
+        self.my_offers_panel.info_panel.update_fields(item_num=item_num,
+                                                      min_price=self.offers_history[item_num]['min'],
+                                                      status=self.offers_history[item_num]['status'],
+                                                      desc=self.offers_history[item_num]['desc'])
+
+    def add_new_offer_history(self, item_num, min_price, desc):
+        self.offers_history[item_num] = {'min': min_price, 'status': 'Currently being auctioned for.', 'desc': desc}
+
+    def add_offer_history_to_list(self, item_num, status):
+        self.offers_history[item_num]['status'] = status
+        self.my_offers_panel.add_new_ended_item(item_num)
+
     async def run_tk_loop(self, interval=0.05):
         try:
             while True:
@@ -179,6 +198,7 @@ class AuctionClientGui(tk.Frame):
         except tk.TclError as e:
             if "application has been destroyed" not in e.args[0]:
                 raise
+
 
 if __name__ == '__main__':
     root = tk.Tk()
