@@ -38,7 +38,12 @@ class RegisterPanel(tk.Frame):
         self.response_msg_label.grid(row=1, column=2, columnspan=2)
 
     def register_cmnd(self):
-        self.register_cb()
+        name = self.name_entry.get()
+        server_ip = self.server_ip_entry.get()
+        self.register_cb(name, server_ip)
+
+    def set_response_text(self, response):
+        self.response_msg_label['text'] = response
 
 
 
