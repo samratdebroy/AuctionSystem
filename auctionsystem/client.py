@@ -120,12 +120,15 @@ class AuctionClient:
             print('Could not register because {}'.format(reason.str))
 
     def rcv_dereg_conf(self, req_num, name, ip_addr):
-        # Handle UDP message to confirm registration for the client
         self.confirm_acknowledgement(req_num)
+
+        self.tcp_clients.clear()  # Should close all of the connections
+        self.udp_client.close_socket()
+
         if self.gui_cb:
             self.gui_cb(MESSAGE.DEREGISTER_CONFIRM)
         else:
-            print('Successfully registered')
+            print('Successfully deregistered')
 
     def rcv_dereg_denied(self, req_num, reason):
         # The client could not register with the server
