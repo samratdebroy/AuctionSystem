@@ -100,11 +100,6 @@ class AuctionServer:
         if name in self.registration_table:
             validity = REASON.ALREADY_REGISTERED
 
-        # TODO: what if ip_address is damaged?
-        bad_ip = False
-        if bad_ip:
-            validity = REASON.BAD_IP
-
         if validity is REASON.VALID:
             #  Update the registration table with the new entry
             registration_data = {'req_num': req_num, 'ip_addr': ip_addr,
@@ -207,7 +202,7 @@ class AuctionServer:
             self.next_item_number += 1
 
             # Acknowledge the offer to the client
-            self.send_offer_confirm(req_num, name, offer, ip_addr, port_num)
+            self.send_offer_confirm(req_num, offer, ip_addr, port_num)
 
             # Inform all clients that a new item is offered at the auction
             self.sendall_new_item(offer)
@@ -215,9 +210,9 @@ class AuctionServer:
             # Respond with why the client can't offer the item
             self.send_offer_denied(req_num, validity.val, ip_addr, port_num)
 
-    def send_offer_confirm(self, req_num, name, offer, ip_addr, port_num):
+    def send_offer_confirm(self, req_num, offer, ip_addr, port_num):
         #  Send UDP message to confirm offer to the client
-        self.send_udp_message(req_num, name, offer['item_num'], offer['desc'], offer['min'],
+        self.send_udp_message(req_num, offer['item_num'], offer['desc'], offer['min'],
                               client_address=(ip_addr, int(port_num)),
                               message=MESSAGE.OFFER_CONFIRM)
 
