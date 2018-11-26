@@ -31,12 +31,12 @@ class MyOffersPanel(tk.Frame):
         # Row 2
         self.ongoing_offers_listbox = tk.Listbox(self)
         self.ongoing_offers_listbox.event_generate(helper.SELECTION_EVENT_STR)
-        self.ongoing_offers_listbox.bind(helper.SELECTION_EVENT_STR, self.list_ongoing_sel_cb)
+        self.ongoing_offers_listbox.bind(helper.SELECTION_EVENT_STR, self.selection_ongoing_cb)
         self.ongoing_offers_listbox.grid(row=2, column=0)
 
         self.ended_offers_listbox = tk.Listbox(self)
         self.ended_offers_listbox.event_generate(helper.SELECTION_EVENT_STR)
-        self.ended_offers_listbox.bind(helper.SELECTION_EVENT_STR, self.list_ended_sel_cb)
+        self.ended_offers_listbox.bind(helper.SELECTION_EVENT_STR, self.selection_ended_cb)
         self.ended_offers_listbox.grid(row=2, column=1)
 
         # Row 3
@@ -44,14 +44,16 @@ class MyOffersPanel(tk.Frame):
         self.info_panel.grid(row=3, column=0)
 
     def selection_ongoing_cb(self, event):
-        self.selected_ongoing_item = event.widget.get(event.widget.curselection())
-        # See AuctionClientGui's ongoing_item_sel_cb function
-        self.list_ongoing_sel_cb(self.selected_ongoing_item)
+        if self.ongoing_offers_listbox.curselection():
+            self.selected_ongoing_item = self.ongoing_offers_listbox.get(self.ongoing_offers_listbox.curselection())
+            # See AuctionClientGui's ongoing_item_sel_cb function
+            self.list_ongoing_sel_cb(self.selected_ongoing_item)
 
     def selection_ended_cb(self, event):
-        self.selected_ended_item = event.widget.get(event.widget.curselection())
-        # See AuctionClientGui's ended_item_sel_cb function
-        self.list_ended_sel_cb(self.selected_ended_item)
+        if self.ended_offers_listbox.curselection():
+            self.selected_ended_item = self.ended_offers_listbox.get(self.ended_offers_listbox.curselection())
+            # See AuctionClientGui's ended_item_sel_cb function
+            self.list_ended_sel_cb(self.selected_ended_item)
 
     def add_new_ongoing_item(self, item_num):
         self.ongoing_offers_listbox.insert(tk.END, item_num)

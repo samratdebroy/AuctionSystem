@@ -31,9 +31,10 @@ class ItemsListPanel(tk.Frame):
         self.new_item_panel.grid(row=2, column=0)
 
     def selection_cb(self, event):
-        self.selected_item = event.widget.get(event.widget.curselection())
-        # See AuctionClientGui's bidding_item_sel_cb function
-        self.list_sel_cb(self.selected_item)
+        if self.items_listbox.curselection():
+            self.selected_item = event.widget.get(event.widget.curselection())
+            # See AuctionClientGui's bidding_item_sel_cb function
+            self.list_sel_cb(self.selected_item)
 
     def add_new_item(self, item_num):
         self.items_listbox.insert(0, item_num)

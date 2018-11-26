@@ -63,6 +63,7 @@ class AuctionClientGui(tk.Frame):
     def register_cb(self, name, server_ip, port_num):
         self.client = AuctionClient(name=name, server_address=(server_ip, int(port_num)), gui_cb=self.rcv_msg,
                                     loop=self.loop)
+        self.client.client_name = name
         client_address = self.client.udp_client.address
         self.client.send_register(name, client_address[0], client_address[1])
 
@@ -73,7 +74,7 @@ class AuctionClientGui(tk.Frame):
         self.client.send_offer(self.client.client_name, self.client.udp_client.address[0], desc, min_price)
 
     def bid_cb(self, item_num, amount):
-        self.client.send_bid(item_num, amount, self.client.client_name)
+        self.client.send_bid(item_num, amount)
 
         # We want to keep a record of items that we are bidding on
         if item_num not in self.offers_history:
@@ -173,9 +174,9 @@ class AuctionClientGui(tk.Frame):
     def update_new_item_panel(self, item_num):
         if item_num in self.client.bidding_items:
             self.items_list_panel.new_item_panel.update_fields(item_num=item_num,
-                                                               min_price=self.client.bidding_items['min'],
-                                                               descr=self.client.bidding_items['desc'],
-                                                               highest=self.client.bidding_items['highest_bid'])
+                                                               min_price=self.client.bidding_items[item_num]['min'],
+                                                               descr=self.client.bidding_items[item_num]['desc'],
+                                                               highest=self.client.bidding_items[item_num]['highest_bid'])
 
     def update_offer_info_panel(self, item_num):
         self.my_offers_panel.info_panel.update_fields(item_num=item_num,

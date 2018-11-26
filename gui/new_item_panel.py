@@ -60,9 +60,9 @@ class NewItemPanel(tk.Frame):
         self.highest_label_val['text'] = '${}'.format(highest)
 
     def bid_cmnd(self):
-        item_num = self.item_num_label['text']
+        item_num = self.item_num_label['text'].split(' ')[1] # TODO: FIX this is a hack bc label is "Item ##"
         bid = helper.get_truncated_entry(self.bid_entry, 10)
-        if bid.isdigits():
+        if bid.isdigit():
             self.bid_cb(item_num, bid)
         else:
             # TODO: add real error message
