@@ -32,7 +32,7 @@ class ItemsListPanel(tk.Frame):
 
     def selection_cb(self, event):
         if self.items_listbox.curselection():
-            self.selected_item = event.widget.get(event.widget.curselection())
+            self.selected_item = event.widget.get(event.widget.curselection()[0])
             # See AuctionClientGui's bidding_item_sel_cb function
             self.list_sel_cb(self.selected_item)
 
