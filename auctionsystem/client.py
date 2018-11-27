@@ -81,7 +81,7 @@ class AuctionClient:
         elif command == MESSAGE.UNREGISTERED.value:
             self.rcv_unregistered(req_num=data[1], reason=data[2])
         elif command == MESSAGE.DEREGISTER_CONFIRM.value:
-            self.rcv_dereg_conf(req_num=data[1], name=data[2], ip_addr=data[3])
+            self.rcv_dereg_conf(req_num=data[1])
         elif command == MESSAGE.DEREGISTER_DENIED.value:
             self.rcv_dereg_denied(req_num=data[1], reason=data[2])
         elif command == MESSAGE.OFFER_CONFIRM.value:
@@ -119,7 +119,7 @@ class AuctionClient:
         else:
             print('Could not register because {}'.format(reason.str))
 
-    def rcv_dereg_conf(self, req_num, name, ip_addr):
+    def rcv_dereg_conf(self, req_num):
         self.confirm_acknowledgement(req_num)
 
         self.tcp_clients.clear()  # Should close all of the connections
