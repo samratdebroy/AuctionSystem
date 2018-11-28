@@ -38,8 +38,11 @@ class AuctionServer:
             self.offers = dict()
 
         # Keep track of item numbers to ensure they're all unique
-        # TODO: This should probably be saved to file in self.offers to ensure that we don't restart from 0 if recover
         self.next_item_number = 0
+        if recover:
+            if len(self.offers) > 0:
+                # Set the item number to the largest item number in the recovered offers file + 1
+                self.next_item_number = sorted([int(item_num) for item_num in self.offers.keys()])[-1] + 1
 
         # Setup sockets
         self.udp_server = UDPServer(self.loop, self.handle_receive)
