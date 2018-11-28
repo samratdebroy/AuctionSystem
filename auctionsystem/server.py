@@ -122,7 +122,6 @@ class AuctionServer:
         self.send_udp_message(req_num, name, ip_addr, port_num,
                               client_address=(ip_addr, int(port_num)),
                               message=MESSAGE.REGISTERED)
-        self.send_one_all_items(ip_addr, port_num)
 
     def send_unregistered(self, req_num, reason, ip_addr, port_num):
         #  Send UDP message with req_unm and reason for unregistrating client
@@ -220,12 +219,6 @@ class AuctionServer:
     def send_offer_denied(self, req_num, reason, ip_addr, port_num):
         #  Send UDP message to deny offer to the client and explain why
         self.send_udp_message(req_num, reason, client_address=(ip_addr, int(port_num)), message=MESSAGE.OFFER_DENIED)
-
-    def send_one_all_items(self, ip_addr, port_num):
-        for item_num, offer in self.offers.items():
-            item_server = self.tcp_servers[item_num]
-            self.send_udp_message(item_num, offer['desc'], offer['min'], item_server.get_port_number(),
-                                  client_address=(ip_addr, int(port_num)), message=MESSAGE.NEW_ITEM)
 
     def sendall_new_item(self, offer):
         #  Create new TCP socket to handle bidding for this item ; send to all clients
