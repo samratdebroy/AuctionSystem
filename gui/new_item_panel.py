@@ -63,7 +63,7 @@ class NewItemPanel(tk.Frame):
         self.highest_label_val['text'] = '${}'.format(highest)
 
     def bid_cmnd(self):
-        item_num = self.item_num_label['text']
+        item_num = self.item_num_label_val['text']
         bid = helper.get_truncated_entry(self.bid_entry, 10)
         if bid.isdigit():
             self.bid_cb(item_num, bid)
