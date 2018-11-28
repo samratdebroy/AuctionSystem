@@ -1,6 +1,7 @@
 import tkinter as tk
 import gui.gui_helper as helper
 
+
 class NewItemPanel(tk.Frame):
 
     def __init__(self, master=None, bid_cb=None):
@@ -14,8 +15,11 @@ class NewItemPanel(tk.Frame):
         # Create widgets
 
         # Row 0
-        self.item_num_label = tk.Label(self)
+        self.item_num_label = tk.Label(self, text='Item:')
         self.item_num_label.grid(row=0, column=0)
+
+        self.item_num_label_val = tk.Label(self)
+        self.item_num_label_val.grid(row=0, column=1)
 
         # Row 1
         self.min_price_label = tk.Label(self, text='Minimum Price:')
@@ -28,7 +32,6 @@ class NewItemPanel(tk.Frame):
         self.descr_label = tk.Label(self, text='Description:')
         self.descr_label.grid(row=2, column=0)
 
-        # TODO: Change this to a read-only text object, make a function to put in the text
         self.descr_label_val = tk.Label(self)
         self.descr_label_val.grid(row=2, column=1, columnspan=4)
 
@@ -53,17 +56,21 @@ class NewItemPanel(tk.Frame):
         # Initial setting of labels
         self.update_fields()
 
-    def update_fields(self, item_num='0', min_price='0', descr='---', highest='0'):
-        self.item_num_label['text'] = 'Item {}'.format(item_num)
+    def update_fields(self, item_num='---', min_price='---', descr='---', highest='---'):
+        self.item_num_label_val['text'] = item_num
         self.min_price_label_val['text'] = '${}'.format(min_price)
         self.descr_label_val['text'] = descr
         self.highest_label_val['text'] = '${}'.format(highest)
 
     def bid_cmnd(self):
-        item_num = self.item_num_label['text'].split(' ')[1] # TODO: FIX this is a hack bc label is "Item ##"
+        item_num = self.item_num_label_val['text']
         bid = helper.get_truncated_entry(self.bid_entry, 10)
         if bid.isdigit():
             self.bid_cb(item_num, bid)
         else:
             # TODO: add real error message
             print('Bid must be a valid number with up to 10 digits')
+
+    def clear(self):
+        self.update_fields()  # Default args are 'empty'
+        self.bid_entry.delete(0, tk.END)

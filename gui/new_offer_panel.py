@@ -14,7 +14,7 @@ class NewOfferPanel(tk.Frame):
         # Create widgets
 
         # Row 0
-        self.new_offer_label = tk.Label(self, text='New Offer');
+        self.new_offer_label = tk.Label(self, text='New Offer')
         self.new_offer_label.grid(row=0, column=0)
 
         # Row 1
@@ -37,7 +37,6 @@ class NewOfferPanel(tk.Frame):
         self.put_up_offer_button.grid(row=4, column=0, columnspan=2)
 
         # Row 5
-        # TODO: Change to read only text, make method to fill text
         self.response_label = tk.Label(self, text='Response:')
         self.response_label.grid(row=5, column=0)
 
@@ -53,5 +52,8 @@ class NewOfferPanel(tk.Frame):
             # Todo: a real error message
             print('Min value needs to be a valid number of less than 10 digits')
 
-    def set_response_text(self, reason):
+    def set_response_text(self, reason=''):
         self.response_msg_label['text'] = reason
+
+    def clear(self):
+        self.set_response_text()  # Default arg is empty

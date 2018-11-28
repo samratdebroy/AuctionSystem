@@ -132,6 +132,13 @@ class AuctionClientGui(tk.Frame):
         for panel in self.non_reg_panels:
             self.set_disabled(panel, not activate)
 
+        if activate:
+            self.reg_panel.clear()
+            self.dereg_panel.clear()
+            self.items_list_panel.clear()
+            self.my_offers_panel.clear()
+            self.new_offer_panel.clear()
+
     def rcv_unregistered(self, reason):
         self.reg_panel.set_response_text(reason)
 
@@ -146,7 +153,8 @@ class AuctionClientGui(tk.Frame):
         self.new_offer_panel.set_response_text(reason)
 
     def rcv_new_item(self, item_num):
-        self.items_list_panel.add_new_item(item_num)
+        if item_num not in self.client.offers:
+            self.items_list_panel.add_new_item(item_num)
 
     def rcv_highest(self, item_num):
         if self.items_list_panel.selected_item == item_num:

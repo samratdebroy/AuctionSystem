@@ -36,7 +36,6 @@ class RegisterPanel(tk.Frame):
         self.register_label = tk.Button(self, text='Register', command=self.register_cmnd)
         self.register_label.grid(row=1, column=0)
 
-        # TODO: Change to read only text, make method to fill text
         self.response_label = tk.Label(self, text='Response:')
         self.response_label.grid(row=1, column=1)
 
@@ -54,8 +53,9 @@ class RegisterPanel(tk.Frame):
             # TODO: check valid server address type
             print('PORT NUMBER MUST BE A VALID NUMBER')
 
-    def set_response_text(self, response):
+    def set_response_text(self, response=''):
         self.response_msg_label['text'] = response
 
-
+    def clear(self):
+        self.set_response_text()  # Default arg is empty
 

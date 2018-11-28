@@ -68,3 +68,8 @@ class MyOffersPanel(tk.Frame):
             self.ongoing_offers_listbox.delete(offer_ended_index)
 
         self.ended_offers_listbox.insert(tk.END, item_num)
+
+    def clear(self):
+        self.ongoing_offers_listbox.delete(0, tk.END)
+        self.ended_offers_listbox.delete(0, tk.END)
+        self.info_panel.clear()

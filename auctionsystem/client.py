@@ -1,9 +1,6 @@
-# TODO: clients have to be independent of each other
-# TODO: I/O system -> user input
-
 from auctionsystem.udp.client import UDPClient
 from auctionsystem.tcp.client import TCPClient
-from auctionsystem.protocol import MESSAGE, PROTOCOL, REASON, AUCTION_CONSTS
+from auctionsystem.protocol import MESSAGE, PROTOCOL, REASON
 import asyncio
 
 # To generate random name for client
@@ -81,7 +78,7 @@ class AuctionClient:
         elif command == MESSAGE.UNREGISTERED.value:
             self.rcv_unregistered(req_num=data[1], reason=data[2])
         elif command == MESSAGE.DEREGISTER_CONFIRM.value:
-            self.rcv_dereg_conf(req_num=data[1], name=data[2], ip_addr=data[3])
+            self.rcv_dereg_conf(req_num=data[1])
         elif command == MESSAGE.DEREGISTER_DENIED.value:
             self.rcv_dereg_denied(req_num=data[1], reason=data[2])
         elif command == MESSAGE.OFFER_CONFIRM.value:
@@ -114,12 +111,15 @@ class AuctionClient:
     def rcv_unregistered(self, req_num, reason):
         # The client could not register with the server
         self.confirm_acknowledgement(req_num)
-        if self.gui_cb:
-            self.gui_cb(MESSAGE.UNREGISTERED, reason)
-        else:
-            print('Could not register because {}'.format(reason.str))
 
-    def rcv_dereg_conf(self, req_num, name, ip_addr):
+        reason_str = REASON.get_reason_str(reason)
+
+        if self.gui_cb:
+            self.gui_cb(MESSAGE.UNREGISTERED, reason_str)
+        else:
+            print('Could not register because {}'.format(reason_str))
+
+    def rcv_dereg_conf(self, req_num):
         self.confirm_acknowledgement(req_num)
 
         self.tcp_clients.clear()  # Should close all of the connections
@@ -133,10 +133,13 @@ class AuctionClient:
     def rcv_dereg_denied(self, req_num, reason):
         # The client could not register with the server
         self.confirm_acknowledgement(req_num)
+
+        reason_str = REASON.get_reason_str(reason)
+
         if self.gui_cb:
-            self.gui_cb(MESSAGE.DEREGISTER_DENIED, reason)
+            self.gui_cb(MESSAGE.DEREGISTER_DENIED, reason_str)
         else:
-            print('Deregistration was denied because {}'.format(reason.str))
+            print('Deregistration was denied because {}'.format(reason_str))
 
     def rcv_offer_conf(self, req_num, item_num, desc, min_price):
         # Handle UDP message to confirm registration offer was made for item
@@ -148,10 +151,13 @@ class AuctionClient:
     def rcv_offer_denied(self, req_num, reason):
         # The client could not register with the server
         self.confirm_acknowledgement(req_num)
+
+        reason_str = REASON.get_reason_str(reason)
+
         if self.gui_cb:
-            self.gui_cb(MESSAGE.OFFER_DENIED, reason)
+            self.gui_cb(MESSAGE.OFFER_DENIED, reason_str)
         else:
-            print('Offer was denied because {}'.format(reason.str))
+            print('Offer was denied because {}'.format(reason_str))
 
     def rcv_new_item(self, item_num, desc, min_price, port):
         if item_num in self.bidding_items.keys():
@@ -210,8 +216,10 @@ class AuctionClient:
             print('Winner of item {}, for {}, is {}, at {}:{}'.format(item_num, amount, name, ip_addr, port))
 
     def rcv_not_sold(self, item_num, reason):
+        reason_str = REASON.get_reason_str(reason)
+
         if self.gui_cb:
-            self.gui_cb(MESSAGE.NOT_SOLD, reason)
+            self.gui_cb(MESSAGE.NOT_SOLD, reason_str)
         else:
             print('Item {}, was not sold because {}'.format(item_num, reason.str))
 

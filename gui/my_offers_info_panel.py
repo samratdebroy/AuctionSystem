@@ -13,8 +13,11 @@ class MyOffersInfoPanel(tk.Frame):
         # Create widgets
 
         # Row 0
-        self.item_num_label = tk.Label(self)
+        self.item_num_label = tk.Label(self, text='Item:')
         self.item_num_label.grid(row=0, column=0)
+
+        self.item_num_label_val = tk.Label(self)
+        self.item_num_label_val.grid(row=0, column=1)
 
         # Row 1
         self.min_price_label = tk.Label(self, text='Minimum Price:')
@@ -41,7 +44,10 @@ class MyOffersInfoPanel(tk.Frame):
         self.update_fields()
 
     def update_fields(self, item_num='---', min_price='---', status='---', desc='---'):
-        self.item_num_label['text'] = 'Item {}'.format(item_num)
+        self.item_num_label_val['text'] = item_num
         self.min_price_label_val['text'] = '${}'.format(min_price)
         self.status_label_val['text'] = status
         self.desc_label_val['text'] = desc
+
+    def clear(self):
+        self.update_fields()  # Default args are 'empty' values.
