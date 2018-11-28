@@ -129,6 +129,13 @@ class AuctionClientGui(tk.Frame):
 
         self.set_disabled(self.reg_panel, activate)
 
+        if not activate:
+            self.reg_panel.clear()
+            self.dereg_panel.clear()
+            self.items_list_panel.clear()
+            self.my_offers_panel.clear()
+            self.new_offer_panel.clear()
+
         for panel in self.non_reg_panels:
             self.set_disabled(panel, not activate)
 

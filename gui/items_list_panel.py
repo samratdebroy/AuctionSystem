@@ -38,3 +38,7 @@ class ItemsListPanel(tk.Frame):
 
     def add_new_item(self, item_num):
         self.items_listbox.insert(0, item_num)
+
+    def clear(self):
+        self.items_listbox.delete(0, tk.END)
+        self.new_item_panel.clear()
