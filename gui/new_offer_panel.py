@@ -56,6 +56,4 @@ class NewOfferPanel(tk.Frame):
         self.response_msg_label['text'] = reason
 
     def clear(self):
-        self.descr_text.delete('1.0', 'end-1c')
-        self.min_price_entry.delete(0, tk.END)
         self.set_response_text()  # Default arg is empty

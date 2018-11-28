@@ -73,3 +73,4 @@ class NewItemPanel(tk.Frame):
 
     def clear(self):
         self.update_fields()  # Default args are 'empty'
+        self.bid_entry.delete(0, tk.END)
