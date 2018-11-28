@@ -44,7 +44,7 @@ class MyOffersInfoPanel(tk.Frame):
         self.update_fields()
 
     def update_fields(self, item_num='---', min_price='---', status='---', desc='---'):
-        self.item_num_label['text'] = item_num
+        self.item_num_label_val['text'] = item_num
         self.min_price_label_val['text'] = '${}'.format(min_price)
         self.status_label_val['text'] = status
         self.desc_label_val['text'] = desc
