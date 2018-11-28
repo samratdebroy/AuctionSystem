@@ -146,7 +146,8 @@ class AuctionClientGui(tk.Frame):
         self.new_offer_panel.set_response_text(reason)
 
     def rcv_new_item(self, item_num):
-        self.items_list_panel.add_new_item(item_num)
+        if item_num not in self.client.offers:
+            self.items_list_panel.add_new_item(item_num)
 
     def rcv_highest(self, item_num):
         if self.items_list_panel.selected_item == item_num:
