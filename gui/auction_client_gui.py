@@ -117,7 +117,6 @@ class AuctionClientGui(tk.Frame):
         elif command == MESSAGE.SOLD_TO:
             self.rcv_sold_to(item_num=args[0], name=args[1], ip_addr=args[2], port=args[3], amount=args[4])
         elif command == MESSAGE.NOT_SOLD:
-            print('HERE: {0} {1}'.format(args[0], args[1]))
             self.rcv_not_sold(item_num=args[0], reason=args[1])
 
     # Message Functions
@@ -197,8 +196,10 @@ class AuctionClientGui(tk.Frame):
         self.offers_history[item_num] = {'min': min_price, 'status': 'Currently being auctioned for.', 'desc': desc}
 
     def add_offer_history_to_list(self, item_num, status):
-        self.offers_history[item_num]['status'] = status
-        self.my_offers_panel.add_new_ended_item(item_num)
+        self.items_list_panel.remove_item(item_num)
+        if item_num in self.offers_history:
+            self.offers_history[item_num]['status'] = status
+            self.my_offers_panel.add_new_ended_item(item_num)
 
     async def run_tk_loop(self, interval=0.05):
         try:
