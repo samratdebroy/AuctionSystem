@@ -219,7 +219,7 @@ class AuctionClient:
         reason_str = REASON.get_reason_str(reason)
 
         if self.gui_cb:
-            self.gui_cb(MESSAGE.NOT_SOLD, reason_str)
+            self.gui_cb(MESSAGE.NOT_SOLD, item_num, reason_str)
         else:
             print('Item {}, was not sold because {}'.format(item_num, reason.str))
 

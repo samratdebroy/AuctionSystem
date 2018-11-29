@@ -117,6 +117,7 @@ class AuctionClientGui(tk.Frame):
         elif command == MESSAGE.SOLD_TO:
             self.rcv_sold_to(item_num=args[0], name=args[1], ip_addr=args[2], port=args[3], amount=args[4])
         elif command == MESSAGE.NOT_SOLD:
+            print('HERE: {0} {1}'.format(args[0], args[1]))
             self.rcv_not_sold(item_num=args[0], reason=args[1])
 
     # Message Functions
