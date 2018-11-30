@@ -64,8 +64,7 @@ class MyOffersPanel(tk.Frame):
         # if it is in that list
         ongoing_offers = self.ongoing_offers_listbox.get(0, tk.END)
         if item_num in ongoing_offers:
-            offer_ended_index = ongoing_offers.index(item_num)
-            self.ongoing_offers_listbox.delete(offer_ended_index)
+            helper.delete_listbox_item(item_num, self.ongoing_offers_listbox)
 
         self.ended_offers_listbox.insert(tk.END, item_num)
 

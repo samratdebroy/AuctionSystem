@@ -38,8 +38,11 @@ class AuctionServer:
             self.offers = dict()
 
         # Keep track of item numbers to ensure they're all unique
-        # TODO: This should probably be saved to file in self.offers to ensure that we don't restart from 0 if recover
         self.next_item_number = 0
+        if recover:
+            if len(self.offers) > 0:
+                # Set the item number to the largest item number in the recovered offers file + 1
+                self.next_item_number = sorted([int(item_num) for item_num in self.offers.keys()])[-1] + 1
 
         # Setup sockets
         self.udp_server = UDPServer(self.loop, self.handle_receive)
@@ -255,25 +258,27 @@ class AuctionServer:
         seller = self.registration_table[offer['offered_by']]
         seller_address = (seller['ip_addr'], int(seller['port_num']))
 
-        # Get the winning bidder's name if there is one
+        # Get the winning bidder's name if there is one, along with his address and the highest bid
         winner_name = offer['highest_bid_by']
+        winner_addr = offer['highest_bid_addr']
+        bid_amount = offer['highest_bid']
+
+        # Send the winning message if there was a winner
         if winner_name:
-            # Get the winner's data and send the winning message
-            winner_addr = offer['highest_bid_addr']
-            bid_amount = offer['highest_bid']
             data_to_send = self.make_data_to_send(MESSAGE.WIN.value, item_num, winner_name,
                                                   winner_addr[0], winner_addr[1], bid_amount)
             self.tcp_servers[item_num].conn[winner_addr].send(data_to_send)
 
-            # Signal that the bidding is over to all the other clients
-            for connection in self.tcp_servers[item_num].conn.values():
-                # Don't signal biding-over to winner
-                if connection.addr == winner_addr:
-                    continue
-                data_to_send = self.make_data_to_send(MESSAGE.BID_OVER.value, item_num, bid_amount)
-                connection.send(data_to_send)
+        # Signal that the bidding is over to all the other clients
+        for connection in self.tcp_servers[item_num].conn.values():
+            # Don't signal biding-over to winner
+            if connection.addr == winner_addr:
+                continue
+            data_to_send = self.make_data_to_send(MESSAGE.BID_OVER.value, item_num, bid_amount)
+            connection.send(data_to_send)
 
-            # At this point all TCP connections are assumed closed, so inform seller through UDP
+        # At this point all TCP connections are assumed closed, so inform seller through UDP
+        if winner_name:
             self.send_udp_message(item_num, winner_name, winner_addr[0], winner_addr[1], bid_amount,
                                   client_address=seller_address, message=MESSAGE.SOLD_TO)
         else:

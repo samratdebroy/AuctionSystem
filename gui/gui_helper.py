@@ -1,3 +1,4 @@
+import tkinter as tk
 import string
 import random
 from auctionsystem.protocol import *
@@ -33,3 +34,13 @@ def get_truncated_text(textobj, length):
 def gen_rand_str(length):
     rand_name = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
     return rand_name
+
+
+def delete_listbox_item(item_to_remove, list_box):
+    items = list_box.get(0, tk.END)
+    item_index = items.index(item_to_remove)
+    list_box.delete(item_index)
+
+
+def item_in_listbox(item_to_check, list_box):
+    return item_to_check in list_box.get(0, tk.END)
