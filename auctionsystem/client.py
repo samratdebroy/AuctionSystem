@@ -264,7 +264,20 @@ class AuctionClient:
             self.request_num_counter += 1
 
     async def ensure_ack_received(self, *args, req_num, message, time_delay):
-        self.sent_messages[req_num] = args
+
+        # Handle reset limit, don't resend same message more than 3 times
+        if self.sent_messages[req_num]:
+            resend_counter = self.sent_messages[req_num][0]
+            resend_counter = resend_counter - 1
+            if resend_counter < 1:
+                # Gui Callback could not send message
+                # TODO: GUI
+                del self.sent_messages[req_num]
+                return
+            else:
+                self.sent_messages[req_num][0] = resend_counter
+        else:
+            self.sent_messages[req_num] = (3, args)
 
         # Wait until time-out to check if acknowledgement was received
         await asyncio.sleep(time_delay)

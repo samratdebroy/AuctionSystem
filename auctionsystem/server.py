@@ -228,7 +228,12 @@ class AuctionServer:
         new_item_server = TCPServer(self.loop, self.handle_receive)
 
         # For each client connected to the server, send a UDP message to inform them of a new item up for bidding
+        seller_name = offer['offered_by']
         for client in self.registration_table.values():
+            if client['ip_addr'] == self.registration_table[seller_name]['ip_addr'] and \
+                    client['port_num'] == self.registration_table[seller_name]['port_num']:
+                continue  # Don't send New Item to seller
+
             self.send_udp_message(offer['item_num'], offer['desc'], offer['min'], new_item_server.get_port_number(),
                                   client_address=(client['ip_addr'], int(client['port_num'])),
                                   message=MESSAGE.NEW_ITEM)
