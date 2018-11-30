@@ -61,8 +61,8 @@ class AuctionClientGui(tk.Frame):
     # Button callbacks
 
     def register_cb(self, name, server_ip, port_num):
-        self.client = AuctionClient(name=name, server_address=(server_ip, int(port_num)), gui_cb=self.rcv_msg,
-                                    loop=self.loop)
+        self.client = AuctionClient(name=name, server_address=(server_ip, int(port_num)), gui_update_cb=self.rcv_msg,
+                                    gui_timeout_cb=self.display_timeout_msg, loop=self.loop)
         self.client.client_name = name
         client_address = self.client.udp_client.address
         self.client.send_register(name, client_address[0], client_address[1])
@@ -92,20 +92,22 @@ class AuctionClientGui(tk.Frame):
     def ended_item_sel_cb(self, item_num):
         self.update_offer_info_panel(item_num)
 
+    # Client callbacks
+
     def rcv_msg(self, command, *args):
 
         if command == MESSAGE.REGISTERED:
             self.activate_client_interface(True)
         elif command == MESSAGE.UNREGISTERED:
-            self.rcv_unregistered(reason=args[0])
+            self.set_reg_panel_response(response=args[0])
         elif command == MESSAGE.DEREGISTER_CONFIRM:
             self.activate_client_interface(False)
         elif command == MESSAGE.DEREGISTER_DENIED:
-            self.rcv_dereg_denied(reason=args[0])
+            self.set_dereg_panel_response(response=args[0])
         elif command == MESSAGE.OFFER_CONFIRM:
             self.rcv_offer_conf(item_num=args[0])
         elif command == MESSAGE.OFFER_DENIED:
-            self.rcv_offer_denied(reason=args[0])
+            self.set_new_offer_panel_response(response=args[0])
         elif command == MESSAGE.NEW_ITEM:
             self.rcv_new_item(item_num=args[0])
         elif command == MESSAGE.HIGHEST:
@@ -118,6 +120,18 @@ class AuctionClientGui(tk.Frame):
             self.rcv_sold_to(item_num=args[0], name=args[1], ip_addr=args[2], port=args[3], amount=args[4])
         elif command == MESSAGE.NOT_SOLD:
             self.rcv_not_sold(item_num=args[0], reason=args[1])
+
+    def display_timeout_msg(self, command):
+
+        response = 'Error: Could not send {}. Please try again.'.format(command)
+
+        if command == MESSAGE.REGISTER:
+            self.set_reg_panel_response(response=response)
+        elif command == MESSAGE.DEREGISTER:
+            self.set_dereg_panel_response(response=response)
+        elif command == MESSAGE.OFFER:
+            self.set_new_offer_panel_response(response=response)
+
 
     # Message Functions
 
@@ -139,18 +153,18 @@ class AuctionClientGui(tk.Frame):
             self.my_offers_panel.clear()
             self.new_offer_panel.clear()
 
-    def rcv_unregistered(self, reason):
-        self.reg_panel.set_response_text(reason)
+    def set_reg_panel_response(self, response):
+        self.reg_panel.set_response_text(response)
 
-    def rcv_dereg_denied(self, reason):
-        self.dereg_panel.set_response_text(reason)
+    def set_dereg_panel_response(self, response):
+        self.dereg_panel.set_response_text(response)
 
     def rcv_offer_conf(self, item_num):
         self.my_offers_panel.add_new_ongoing_item(item_num)
         self.add_new_offer_history(item_num, self.client.offers[item_num]['min'], self.client.offers[item_num]['desc'])
 
-    def rcv_offer_denied(self, reason):
-        self.new_offer_panel.set_response_text(reason)
+    def set_new_offer_panel_response(self, response):
+        self.new_offer_panel.set_response_text(response)
 
     def rcv_new_item(self, item_num):
         if item_num not in self.client.offers:
