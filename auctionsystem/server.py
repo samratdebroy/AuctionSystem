@@ -1,13 +1,19 @@
 from auctionsystem.udp.server import UDPServer
 from auctionsystem.tcp.server import TCPServer
 from auctionsystem.protocol import MESSAGE, REASON, PROTOCOL, AUCTION_CONSTS
-import queue
+
 import asyncio
 import pickle
-
+import logging
+import sys
 
 class AuctionServer:
     def __init__(self, recover=False):
+
+        self.logger = logging.getLogger('Logger')
+        self.logger.addHandler(logging.FileHandler('server_Log.log'))
+        self.logger.addHandler(logging.StreamHandler(sys.stdout))
+        self.logger.setLevel('DEBUG')
 
         self.loop = asyncio.get_event_loop()
 
@@ -45,7 +51,7 @@ class AuctionServer:
                 self.next_item_number = sorted([int(item_num) for item_num in self.offers.keys()])[-1] + 1
 
         # Setup sockets
-        self.udp_server = UDPServer(self.loop, self.handle_receive)
+        self.udp_server = UDPServer(self.loop, self.handle_receive, logger=self.logger)
         self.tcp_servers = dict()
 
         if recover and self.offers:
@@ -225,7 +231,7 @@ class AuctionServer:
 
     def sendall_new_item(self, offer):
         #  Create new TCP socket to handle bidding for this item ; send to all clients
-        new_item_server = TCPServer(self.loop, self.handle_receive)
+        new_item_server = TCPServer(self.loop, self.handle_receive, logger=self.logger)
 
         # For each client connected to the server, send a UDP message to inform them of a new item up for bidding
         seller_name = offer['offered_by']
