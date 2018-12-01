@@ -201,7 +201,7 @@ class AuctionClient:
         # Item has been sold to another client
         self.bidding_ended(item_num)
         if self.gui_update_cb:
-            self.gui_update_cb(MESSAGE.WIN, item_num, amount)
+            self.gui_update_cb(MESSAGE.BID_OVER, item_num, amount)
         else:
             print("You are NOT the winner of item {}, bought for {}!".format(item_num, amount))
 
