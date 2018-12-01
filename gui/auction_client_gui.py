@@ -63,9 +63,14 @@ class AuctionClientGui(tk.Frame):
     def register_cb(self, name, server_ip, port_num):
         self.client = AuctionClient(name=name, server_address=(server_ip, int(port_num)), gui_update_cb=self.rcv_msg,
                                     gui_timeout_cb=self.display_timeout_msg, loop=self.loop)
+
         self.client.client_name = name
         client_address = self.client.udp_client.address
-        self.client.send_register(name, client_address[0], client_address[1])
+
+        if client_address:
+            self.client.send_register(name, client_address[0], client_address[1])
+        else:
+            self.set_reg_panel_response('Invalid IP address!')
 
     def deregister_cb(self):
         self.client.send_deregister(self.client.client_name, self.client.udp_client.address[0])

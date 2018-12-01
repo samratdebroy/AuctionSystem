@@ -46,7 +46,7 @@ class AuctionClient:
             self.loop.close()
 
     def __del__(self):
-        if self.udp_client is not None:
+        if not self.udp_client:
             self.udp_client.close_socket()
 
     async def run(self):
@@ -61,12 +61,11 @@ class AuctionClient:
             await asyncio.sleep(0.1)
 
     def handle_receive(self, data, addr=None):
-        # TODO: Handle the case where data[0] is damaged or is None
 
         if data is None:
             # Other side has disconnected
-            # TODO: Handle disconnection
-            pass
+            print('Connection has been lost!')
+            return
 
         # Parse the data
         data = data.decode().split(PROTOCOL.DELIMITER)
