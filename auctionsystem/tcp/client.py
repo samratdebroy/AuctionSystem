@@ -71,7 +71,11 @@ class TCPClient:
         while True:
             # Send data to client asynchronously
             data = await self._send_queue.get()
-            await loop.sock_sendall(self._socket, data)
-            print('Sent: {0} to {1}'.format(data, self.server_address), file=sys.stderr)
-            self._send_queue.task_done()
+            try:
+                await loop.sock_sendall(self._socket, data)
+                print('Sent: {0} to {1}'.format(data, self.server_address), file=sys.stderr)
+                self._send_queue.task_done()
+            except OSError:
+                print('Could not Send: {0} to {1} '
+                      'Server connection could not be reached'.format(data, self.server_address), file=sys.stderr)
 

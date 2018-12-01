@@ -70,3 +70,4 @@ class REASON(Enum):
 
 class AUCTION_CONSTS:
     OFFER_LIMIT = 3
+    RESEND_LIMIT = 3

@@ -63,9 +63,14 @@ class AuctionClientGui(tk.Frame):
     def register_cb(self, name, server_ip, port_num):
         self.client = AuctionClient(name=name, server_address=(server_ip, int(port_num)), gui_update_cb=self.rcv_msg,
                                     gui_timeout_cb=self.display_timeout_msg, loop=self.loop)
+
         self.client.client_name = name
         client_address = self.client.udp_client.address
-        self.client.send_register(name, client_address[0], client_address[1])
+
+        if client_address:
+            self.client.send_register(name, client_address[0], client_address[1])
+        else:
+            self.set_reg_panel_response('Invalid IP address!')
 
     def deregister_cb(self):
         self.client.send_deregister(self.client.client_name, self.client.udp_client.address[0])
@@ -121,9 +126,12 @@ class AuctionClientGui(tk.Frame):
         elif command == MESSAGE.NOT_SOLD:
             self.rcv_not_sold(item_num=args[0], reason=args[1])
 
-    def display_timeout_msg(self, command):
+    def display_timeout_msg(self, command, resend_count=-1):
 
-        response = 'Error: Could not send {}. Please try again.'.format(command)
+        if resend_count > 0:
+            response = 'Timeout: {0} has not received acknowledgement. Resend count: {1}'.format(command, resend_count)
+        else:
+            response = 'Error: Could not send {}. Please try again.'.format(command)
 
         if command == MESSAGE.REGISTER:
             self.set_reg_panel_response(response=response)
@@ -225,8 +233,12 @@ class AuctionClientGui(tk.Frame):
                 raise
 
 
-if __name__ == '__main__':
+def exec_client():
     root = tk.Tk()
     root.title('Auction Client')
     app = AuctionClientGui(master=root)
     app.loop.run_until_complete(app.run_tk_loop())
+
+
+if __name__ == '__main__':
+    exec_client()
