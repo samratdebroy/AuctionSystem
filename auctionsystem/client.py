@@ -12,15 +12,17 @@ import socket
 
 
 class AuctionClient:
-    def __init__(self, name=None, server_address=(socket.getfqdn(), 8888), gui_cb=None, loop=None):
+    def __init__(self, name=None, server_address=(socket.getfqdn(), 8888),
+                 gui_update_cb=None, gui_timeout_cb=None, loop=None):
 
-        if not gui_cb:
+        if not gui_update_cb:
             self.loop = asyncio.get_event_loop()
         else:
             self.loop = loop
 
         # Setup callback to GUI
-        self.gui_cb = gui_cb
+        self.gui_update_cb = gui_update_cb
+        self.gui_timeout_cb = gui_timeout_cb
         self.client_name = name
         if not self.client_name:
             self.client_name = ''.join(
@@ -39,7 +41,7 @@ class AuctionClient:
         self.request_num_counter = 0
 
         # Run the event loop
-        if not self.gui_cb:
+        if not self.gui_update_cb:
             self.loop.run_until_complete(self.run())
             self.loop.close()
 
@@ -103,8 +105,8 @@ class AuctionClient:
     def rcv_registered(self, req_num, name, ip_addr, port_num):
         self.confirm_acknowledgement(req_num)
 
-        if self.gui_cb:
-            self.gui_cb(MESSAGE.REGISTERED)
+        if self.gui_update_cb:
+            self.gui_update_cb(MESSAGE.REGISTERED)
         else:
             print('received registered')
 
@@ -114,8 +116,8 @@ class AuctionClient:
 
         reason_str = REASON.get_reason_str(reason)
 
-        if self.gui_cb:
-            self.gui_cb(MESSAGE.UNREGISTERED, reason_str)
+        if self.gui_update_cb:
+            self.gui_update_cb(MESSAGE.UNREGISTERED, reason_str)
         else:
             print('Could not register because {}'.format(reason_str))
 
@@ -125,8 +127,8 @@ class AuctionClient:
         self.tcp_clients.clear()  # Should close all of the connections
         self.udp_client.close_socket()
 
-        if self.gui_cb:
-            self.gui_cb(MESSAGE.DEREGISTER_CONFIRM)
+        if self.gui_update_cb:
+            self.gui_update_cb(MESSAGE.DEREGISTER_CONFIRM)
         else:
             print('Successfully deregistered')
 
@@ -136,8 +138,8 @@ class AuctionClient:
 
         reason_str = REASON.get_reason_str(reason)
 
-        if self.gui_cb:
-            self.gui_cb(MESSAGE.DEREGISTER_DENIED, reason_str)
+        if self.gui_update_cb:
+            self.gui_update_cb(MESSAGE.DEREGISTER_DENIED, reason_str)
         else:
             print('Deregistration was denied because {}'.format(reason_str))
 
@@ -145,8 +147,8 @@ class AuctionClient:
         # Handle UDP message to confirm registration offer was made for item
         self.confirm_acknowledgement(req_num)
         self.offers[item_num] = {'desc': desc, 'min': min_price}
-        if self.gui_cb:
-            self.gui_cb(MESSAGE.OFFER_CONFIRM, item_num, desc, min_price)
+        if self.gui_update_cb:
+            self.gui_update_cb(MESSAGE.OFFER_CONFIRM, item_num, desc, min_price)
 
     def rcv_offer_denied(self, req_num, reason):
         # The client could not register with the server
@@ -154,8 +156,8 @@ class AuctionClient:
 
         reason_str = REASON.get_reason_str(reason)
 
-        if self.gui_cb:
-            self.gui_cb(MESSAGE.OFFER_DENIED, reason_str)
+        if self.gui_update_cb:
+            self.gui_update_cb(MESSAGE.OFFER_DENIED, reason_str)
         else:
             print('Offer was denied because {}'.format(reason_str))
 
@@ -173,8 +175,8 @@ class AuctionClient:
                                             'highest': False, 'highest_bid': min_price, 'last_bid': 0}
             self.tcp_clients[item_num] = TCPClient(self.loop, self.handle_receive, (self.server_address[0], int(port)))
 
-            if self.gui_cb:
-                self.gui_cb(MESSAGE.NEW_ITEM, item_num)
+            if self.gui_update_cb:
+                self.gui_update_cb(MESSAGE.NEW_ITEM, item_num)
 
     def rcv_highest(self, item_num, amount):
         self.bidding_items[item_num]['highest_bid'] = amount
@@ -184,13 +186,13 @@ class AuctionClient:
             self.bidding_items[item_num]['highest'] = False
 
         # Choose whether or not to bid more on this item
-        if self.gui_cb:
-            self.gui_cb(MESSAGE.HIGHEST, item_num)
+        if self.gui_update_cb:
+            self.gui_update_cb(MESSAGE.HIGHEST, item_num)
 
     def rcv_win(self, item_num, name, ip_addr, port_num, amount):
         # Handle victory
-        if self.gui_cb:
-            self.gui_cb(MESSAGE.WIN, item_num, amount)
+        if self.gui_update_cb:
+            self.gui_update_cb(MESSAGE.WIN, item_num, amount)
         else:
             print("You are the winner of item {}, bought for {}!".format(item_num, amount))
         self.bidding_ended(item_num)
@@ -198,8 +200,8 @@ class AuctionClient:
     def rcv_bid_over(self, item_num, amount):
         # Item has been sold to another client
         self.bidding_ended(item_num)
-        if self.gui_cb:
-            self.gui_cb(MESSAGE.BID_OVER, item_num, amount)
+        if self.gui_update_cb:
+            self.gui_update_cb(MESSAGE.BID_OVER, item_num, amount)
         else:
             print("You are NOT the winner of item {}, bought for {}!".format(item_num, amount))
 
@@ -210,16 +212,16 @@ class AuctionClient:
     def rcv_sold_to(self, item_num, name, ip_addr, port, amount):
         # Figure out which client won the item
         del self.offers[item_num]
-        if self.gui_cb:
-            self.gui_cb(MESSAGE.SOLD_TO, item_num, name, ip_addr, port, amount)
+        if self.gui_update_cb:
+            self.gui_update_cb(MESSAGE.SOLD_TO, item_num, name, ip_addr, port, amount)
         else:
             print('Winner of item {}, for {}, is {}, at {}:{}'.format(item_num, amount, name, ip_addr, port))
 
     def rcv_not_sold(self, item_num, reason):
         reason_str = REASON.get_reason_str(reason)
 
-        if self.gui_cb:
-            self.gui_cb(MESSAGE.NOT_SOLD, item_num, reason_str)
+        if self.gui_update_cb:
+            self.gui_update_cb(MESSAGE.NOT_SOLD, reason_str)
         else:
             print('Item {}, was not sold because {}'.format(item_num, reason.str))
 
@@ -266,18 +268,23 @@ class AuctionClient:
     async def ensure_ack_received(self, *args, req_num, message, time_delay):
 
         # Handle reset limit, don't resend same message more than 3 times
-        if self.sent_messages[req_num]:
+        if self.sent_messages.get(req_num):
             resend_counter = self.sent_messages[req_num][0]
             resend_counter = resend_counter - 1
             if resend_counter < 1:
-                # Gui Callback could not send message
-                # TODO: GUI
+
                 del self.sent_messages[req_num]
+
+                if self.gui_timeout_cb:
+                    self.gui_timeout_cb(message)
+                else:
+                    print('Error: Could not send {}. Please try again.'.format(message))
+
                 return
             else:
                 self.sent_messages[req_num][0] = resend_counter
         else:
-            self.sent_messages[req_num] = (3, args)
+            self.sent_messages[req_num] = [3, args]
 
         # Wait until time-out to check if acknowledgement was received
         await asyncio.sleep(time_delay)
