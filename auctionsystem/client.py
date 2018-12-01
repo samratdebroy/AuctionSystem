@@ -268,7 +268,7 @@ class AuctionClient:
     async def ensure_ack_received(self, *args, req_num, message, time_delay):
 
         # Handle reset limit, don't resend same message more than 3 times
-        if req_num in self.sent_messages:
+        if self.sent_messages.get(req_num):
             resend_counter = self.sent_messages[req_num][0]
             resend_counter = resend_counter - 1
             if resend_counter < 1:
