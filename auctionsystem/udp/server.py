@@ -5,33 +5,35 @@ import sys
 
 class UDPServer:
 
-    def __init__(self, loop, handle_receive_cb, port_number=8888):
+    def __init__(self, loop, handle_receive_cb, logger, port_number=8888):
+        self.logger = logger
+
         self._closed = False
-        self._socket = self._get_udp_server_socket(port_number)
+        self._socket = self._get_udp_server_socket(self.logger, port_number)
 
         # Start listeners for read/write events
         self.task = loop.create_task(self._handle_receive(loop, handle_receive_cb))
 
     def send(self, data, addr):
         self._socket.sendto(data, addr)
-        print('To {0} sent: {1}'.format(addr, data), file=sys.stderr)
+        self.logger.info('To {0} sent: {1}'.format(addr, data))
 
     def close_socket(self):
-        print('Closing socket', file=sys.stderr)
+        self.logger.info('Closing socket')
         self._closed = True
         self.task.cancel()
         self._socket.close()
 
     @staticmethod
-    def _get_udp_server_socket(port_number=8888):
+    def _get_udp_server_socket(logger, port_number=8888):
         # Create a UDP socket
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             # TODO: Check if we need to use sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             sock.setblocking(False)
-            print('UDP server socket created')
+            logger.info('UDP server socket created')
         except OSError as err:
-            print('Failed to create server socket. Error: {0}'.format(err))
+            logger.error('Failed to create server socket. Error: {0}'.format(err))
             sys.exit()
 
         ip_address = socket.getfqdn()  # Get fully qualified domain name
@@ -40,10 +42,9 @@ class UDPServer:
         # Bind the socket to the port
         try:
             sock.bind(server_address)
-            print('Socket binded to {0}'.format(server_address), file=sys.stderr)
+            logger.info('Socket binded to {0}'.format(server_address))
         except OSError as err:
-            print('Binding Failed to {0}. Error: {1}'
-                  .format(server_address, err), file=sys.stderr)
+            logger.error('Binding Failed to {0}. Error: {1}'.format(server_address, err))
             sys.exit()
 
         return sock
@@ -54,7 +55,7 @@ class UDPServer:
             if (data, addr) == (None, None):
                 # This means we received an ICMP Error, ignore this data
                 continue
-            print('From {0} received: {1}'.format(addr, data), file=sys.stderr)
+                self.logger.info('From {0} received: {1}'.format(addr, data))
             handle_receive_cb(data, addr)
 
     def _async_recvfrom(self, loop, n_bytes, future=None, registered=False):
