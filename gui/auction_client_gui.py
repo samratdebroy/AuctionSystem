@@ -225,8 +225,12 @@ class AuctionClientGui(tk.Frame):
                 raise
 
 
-if __name__ == '__main__':
+def exec_client():
     root = tk.Tk()
     root.title('Auction Client')
     app = AuctionClientGui(master=root)
     app.loop.run_until_complete(app.run_tk_loop())
+
+
+if __name__ == '__main__':
+    exec_client()
