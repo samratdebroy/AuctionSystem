@@ -7,7 +7,8 @@ class TCPServer:
 
     class Connection:
 
-        def __init__(self, loop, connection, address, handle_receive_cb):
+        def __init__(self, loop, connection, address, handle_receive_cb, logger):
+            self.logger = logger
             self.addr = address
             self.sock = connection
             self._send_queue = asyncio.Queue(loop=loop)
@@ -31,7 +32,7 @@ class TCPServer:
         async def _handle_receive(self, loop, handle_receive_cb):
             while True:
                 data = await loop.sock_recv(self.sock, 1024)
-                print('Received: {0} from {1}'.format(data, self.addr), file=sys.stderr)
+                self.logger.info('Received: {0} from {1}'.format(data, self.addr))
                 handle_receive_cb(data, self.addr)
 
         async def _handle_send(self, loop):
@@ -40,16 +41,17 @@ class TCPServer:
                 data = await self._send_queue.get()
                 try:
                     await loop.sock_sendall(self.sock, data)
-                    print('Sent: {0} to {1}'.format(data, self.addr), file=sys.stderr)
+                    self.logger.info('Sent: {0} to {1}'.format(data, self.addr))
                     self._send_queue.task_done()
                 except OSError as err:
-                    print('Could not Send: {0} to {1} Client connection could not be reached'.format(data, self.addr),
-                          file=sys.stderr)
+                    self.logger.error('Could not Send: {0} to {1} Client connection could not be reached'
+                                      .format(data, self.addr))
 
-    def __init__(self, loop, handle_receive_cb, port_number=0):
+    def __init__(self, loop, handle_receive_cb, logger, port_number=0):
 
+        self.logger = logger
         self.conn = {}  # Dict of all valid connections
-        self._socket = self.get_tcp_server_socket(port_number)
+        self._socket = self.get_tcp_server_socket(self.logger, port_number)
 
         # Start listener for new connections
         self.receive_task = loop.create_task(self._handle_new_connections(loop, handle_receive_cb))
@@ -58,7 +60,7 @@ class TCPServer:
         self.close_connections()
 
     @staticmethod
-    def get_tcp_server_socket(port_number=0):
+    def get_tcp_server_socket(logger, port_number=0):
         ip_address = socket.getfqdn()
         server_address = (ip_address, port_number)
 
@@ -67,19 +69,18 @@ class TCPServer:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             sock.setblocking(False)
-            print('TCP server socket created')
+            logger.info('TCP server socket created')
         except OSError as err:
-            print('Failed to create server socket. Error: {0}'.format(err))
+            logger.error('Failed to create server socket. Error: {0}'.format(err))
             sys.exit()
 
         # Bind the socket to the port
         try:
             sock.bind(server_address)
             updated_server_address = (server_address[0], sock.getsockname()[1])
-            print('Socket binded to {0}'.format(updated_server_address), file=sys.stderr)
+            logger.info('Socket binded to {0}'.format(updated_server_address))
         except OSError as err:
-            print('Binding Failed to {0}. Error: {1}'
-                  .format(server_address, err), file=sys.stderr)
+            logger.error('Binding Failed to {0}. Error: {1}'.format(server_address, err))
             sys.exit()
 
         # Listen for new incoming connection requests
@@ -89,11 +90,11 @@ class TCPServer:
     async def _handle_new_connections(self, loop, handle_receive_cb):
         while True:
             conn, addr = await loop.sock_accept(self._socket)
-            connection = self.Connection(loop, conn, addr, handle_receive_cb)
+            connection = self.Connection(loop, conn, addr, handle_receive_cb, self.logger)
             self.conn[addr] = connection
 
     def close_connections(self):
-        print('Closing connections to this TCP server', file=sys.stderr)
+        self.logger.warning('Closing connections to this TCP server')
         # Stop listening for new connections to this socket
         self.receive_task.cancel()
 
@@ -105,7 +106,7 @@ class TCPServer:
 
     def close_connection(self, conn):
         # Close this specific connection
-        print('Closing connection to {}'.format(conn.addr), file=sys.stderr)
+        self.logger.warning('Closing connection to {}'.format(conn.addr))
         del self.conn[conn.addr]
 
     def get_port_number(self):
