@@ -8,3 +8,4 @@ auctionsystem/udp/__pycache__/
 gui/__pycache__/
 gui/test/__pycache__/
 offers_file.pickle
+server_Log.log

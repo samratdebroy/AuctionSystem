@@ -48,12 +48,12 @@ class NewOfferPanel(tk.Frame):
         min_price = helper.get_truncated_entry(self.min_price_entry, 10)
         if min_price.isdigit():
             self.send_offer_cb(desc, min_price)
+            self.set_response_text('Sent new offer.')
         else:
-            # Todo: a real error message
-            print('Min value needs to be a valid number of less than 10 digits')
+            self.set_response_text('Invalid minimum price. Please enter a valid number (< 10 digits).')
 
-    def set_response_text(self, reason=''):
-        self.response_msg_label['text'] = reason
+    def set_response_text(self, response=''):
+        self.response_msg_label['text'] = response
 
     def clear(self):
         self.set_response_text()  # Default arg is empty

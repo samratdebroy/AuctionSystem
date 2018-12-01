@@ -126,9 +126,12 @@ class AuctionClientGui(tk.Frame):
         elif command == MESSAGE.NOT_SOLD:
             self.rcv_not_sold(item_num=args[0], reason=args[1])
 
-    def display_timeout_msg(self, command):
+    def display_timeout_msg(self, command, resend_count=-1):
 
-        response = 'Error: Could not send {}. Please try again.'.format(command)
+        if resend_count > 0:
+            response = 'Timeout: {0} has not received acknowledgement. Resend count: {1}'.format(command, resend_count)
+        else:
+            response = 'Error: Could not send {}. Please try again.'.format(command)
 
         if command == MESSAGE.REGISTER:
             self.set_reg_panel_response(response=response)

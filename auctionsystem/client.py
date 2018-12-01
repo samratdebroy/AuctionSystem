@@ -1,6 +1,6 @@
 from auctionsystem.udp.client import UDPClient
 from auctionsystem.tcp.client import TCPClient
-from auctionsystem.protocol import MESSAGE, PROTOCOL, REASON
+from auctionsystem.protocol import MESSAGE, PROTOCOL, REASON, AUCTION_CONSTS
 import asyncio
 
 # To generate random name for client
@@ -283,15 +283,23 @@ class AuctionClient:
             else:
                 self.sent_messages[req_num][0] = resend_counter
         else:
-            self.sent_messages[req_num] = [3, args]
+            self.sent_messages[req_num] = [AUCTION_CONSTS.RESEND_LIMIT, args]
 
         # Wait until time-out to check if acknowledgement was received
         await asyncio.sleep(time_delay)
 
         if self.sent_messages[req_num]:
             # We timed-out without receiving an acknowledgement
-            print('timeOut: Request number {} with args {} has not received acknowledgement'
+
+            if self.gui_timeout_cb:
+                resend_count = AUCTION_CONSTS.RESEND_LIMIT - self.sent_messages[req_num][0] + 1
+                print('resend count = {}'.format(resend_count))
+                self.gui_timeout_cb(message, resend_count)
+
+            # For debugging
+            print('TimeOut: Request number {} with args {} has not received acknowledgement'
                   .format(req_num, self.sent_messages[req_num]))
+
             self.send_udp_message(*args, message=message, resending=True, req_num_resend=int(req_num))
 
     def confirm_acknowledgement(self, req_num):
