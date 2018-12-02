@@ -53,6 +53,13 @@ class NewItemPanel(tk.Frame):
         self.bid_button = tk.Button(self, text='Bid', command=self.bid_cmnd)
         self.bid_button.grid(row=5, column=0)
 
+        # Row 6
+        self.response_label = tk.Label(self, text='Response:')
+        self.response_label.grid(row=6, column=0)
+
+        self.response_label_val = tk.Label(self)
+        self.response_label_val.grid(row=6, column=1)
+
         # Initial setting of labels
         self.update_fields()
 
@@ -62,14 +69,17 @@ class NewItemPanel(tk.Frame):
         self.descr_label_val['text'] = descr
         self.highest_label_val['text'] = '${}'.format(highest)
 
+    def set_response_text(self, response=''):
+        self.response_label_val['text'] = response
+
     def bid_cmnd(self):
         item_num = self.item_num_label_val['text']
         bid = helper.get_truncated_entry(self.bid_entry, 10)
         if bid.isdigit():
             self.bid_cb(item_num, bid)
+            self.set_response_text('Sent bid of: ${}'.format(bid))
         else:
-            # TODO: add real error message
-            print('Bid must be a valid number with up to 10 digits')
+            self.set_response_text('Invalid minimum price. Please enter a valid number (< 10 digits).')
 
     def clear(self):
         self.update_fields()  # Default args are 'empty'
