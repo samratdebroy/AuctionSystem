@@ -79,12 +79,17 @@ class AuctionClientGui(tk.Frame):
         self.client.send_offer(self.client.client_name, self.client.udp_client.address[0], desc, min_price)
 
     def bid_cb(self, item_num, amount):
-        self.client.send_bid(item_num, amount)
+        if item_num in self.client.bidding_items:
+            self.client.send_bid(item_num, amount)
 
-        # We want to keep a record of items that we are bidding on
-        if item_num not in self.offers_history:
-            self.add_new_offer_history(item_num, self.client.bidding_items[item_num]['min'],
-                                       self.client.bidding_items[item_num]['desc'])
+            # We want to keep a record of items that we are bidding on
+            if item_num not in self.offers_history:
+                self.add_new_offer_history(item_num, self.client.bidding_items[item_num]['min'],
+                                           self.client.bidding_items[item_num]['desc'])
+
+            self.set_new_item_panel_response('Sent bid of: ${}'.format(amount))
+        else:
+            self.set_new_item_panel_response('Invalid item number. Please select an item from the list to bid on.')
 
     # Listbox callbacks
 
@@ -177,6 +182,9 @@ class AuctionClientGui(tk.Frame):
     def rcv_new_item(self, item_num):
         if item_num not in self.client.offers:
             self.items_list_panel.add_new_item(item_num)
+
+    def set_new_item_panel_response(self, response):
+        self.items_list_panel.new_item_panel.set_response_text(response)
 
     def rcv_highest(self, item_num):
         if self.items_list_panel.selected_item == item_num:

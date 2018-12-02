@@ -77,7 +77,6 @@ class NewItemPanel(tk.Frame):
         bid = helper.get_truncated_entry(self.bid_entry, 10)
         if bid.isdigit():
             self.bid_cb(item_num, bid)
-            self.set_response_text('Sent bid of: ${}'.format(bid))
         else:
             self.set_response_text('Invalid minimum price. Please enter a valid number (< 10 digits).')
 
