@@ -64,11 +64,7 @@ class MyOffersPanel(tk.Frame):
         # if it is in that list
         if helper.item_in_listbox(item_num, self.ongoing_offers_listbox):
 
-            if self.ongoing_offers_listbox.curselection():
-                if self.ongoing_offers_listbox.curselection()[0] \
-                        == helper.index_item_in_listbox(item_num, self.ongoing_offers_listbox):
-                    self.info_panel.clear()
-
+            self.info_panel.conditional_clear(item_num)
             helper.delete_listbox_item(item_num, self.ongoing_offers_listbox)
 
         self.ended_offers_listbox.insert(tk.END, item_num)

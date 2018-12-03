@@ -51,3 +51,7 @@ class MyOffersInfoPanel(tk.Frame):
 
     def clear(self):
         self.update_fields()  # Default args are 'empty' values.
+
+    def conditional_clear(self, item_num):
+        if self.item_num_label_val['text'] == item_num:
+            self.clear()
