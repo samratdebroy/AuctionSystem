@@ -1,4 +1,5 @@
 import tkinter as tk
+import gui.gui_helper as helper
 from auctionsystem.client import AuctionClient
 from gui.register_panel import RegisterPanel
 from gui.deregister_panel import DeregisterPanel
@@ -79,12 +80,17 @@ class AuctionClientGui(tk.Frame):
         self.client.send_offer(self.client.client_name, self.client.udp_client.address[0], desc, min_price)
 
     def bid_cb(self, item_num, amount):
-        self.client.send_bid(item_num, amount)
+        if item_num in self.client.bidding_items:
+            self.client.send_bid(item_num, amount)
 
-        # We want to keep a record of items that we are bidding on
-        if item_num not in self.offers_history:
-            self.add_new_offer_history(item_num, self.client.bidding_items[item_num]['min'],
-                                       self.client.bidding_items[item_num]['desc'])
+            # We want to keep a record of items that we are bidding on
+            if item_num not in self.offers_history:
+                self.add_new_offer_history(item_num, self.client.bidding_items[item_num]['min'],
+                                           self.client.bidding_items[item_num]['desc'])
+
+            self.set_new_item_panel_response('Sent bid of: ${}'.format(amount))
+        else:
+            self.set_new_item_panel_response('Invalid item number. Please select an item from the list to bid on.')
 
     # Listbox callbacks
 
@@ -140,7 +146,6 @@ class AuctionClientGui(tk.Frame):
         elif command == MESSAGE.OFFER:
             self.set_new_offer_panel_response(response=response)
 
-
     # Message Functions
 
     # Called when receiving registered or dereg confirmed messages
@@ -162,21 +167,24 @@ class AuctionClientGui(tk.Frame):
             self.new_offer_panel.clear()
 
     def set_reg_panel_response(self, response):
-        self.reg_panel.set_response_text(response)
+        self.reg_panel.set_response_text(helper.get_formatted_display_text(response))
 
     def set_dereg_panel_response(self, response):
-        self.dereg_panel.set_response_text(response)
+        self.dereg_panel.set_response_text(helper.get_formatted_display_text(response))
 
     def rcv_offer_conf(self, item_num):
         self.my_offers_panel.add_new_ongoing_item(item_num)
         self.add_new_offer_history(item_num, self.client.offers[item_num]['min'], self.client.offers[item_num]['desc'])
 
     def set_new_offer_panel_response(self, response):
-        self.new_offer_panel.set_response_text(response)
+        self.new_offer_panel.set_response_text(helper.get_formatted_display_text(response))
 
     def rcv_new_item(self, item_num):
         if item_num not in self.client.offers:
             self.items_list_panel.add_new_item(item_num)
+
+    def set_new_item_panel_response(self, response):
+        self.items_list_panel.new_item_panel.set_response_text(helper.get_formatted_display_text(response))
 
     def rcv_highest(self, item_num):
         if self.items_list_panel.selected_item == item_num:
@@ -206,7 +214,9 @@ class AuctionClientGui(tk.Frame):
             self.items_list_panel.new_item_panel.update_fields(item_num=item_num,
                                                                min_price=self.client.bidding_items[item_num]['min'],
                                                                descr=self.client.bidding_items[item_num]['desc'],
-                                                               highest=self.client.bidding_items[item_num]['highest_bid'])
+                                                               highest=
+                                                               self.client.bidding_items[item_num]['highest_bid'],
+                                                               winning=self.client.bidding_items[item_num]['highest'])
 
     def update_offer_info_panel(self, item_num):
         self.my_offers_panel.info_panel.update_fields(item_num=item_num,
