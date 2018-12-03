@@ -214,7 +214,9 @@ class AuctionClientGui(tk.Frame):
             self.items_list_panel.new_item_panel.update_fields(item_num=item_num,
                                                                min_price=self.client.bidding_items[item_num]['min'],
                                                                descr=self.client.bidding_items[item_num]['desc'],
-                                                               highest=self.client.bidding_items[item_num]['highest_bid'])
+                                                               highest=
+                                                               self.client.bidding_items[item_num]['highest_bid'],
+                                                               winning=self.client.bidding_items[item_num]['highest'])
 
     def update_offer_info_panel(self, item_num):
         self.my_offers_panel.info_panel.update_fields(item_num=item_num,
