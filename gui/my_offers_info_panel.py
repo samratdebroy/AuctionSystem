@@ -34,8 +34,8 @@ class MyOffersInfoPanel(tk.Frame):
         self.status_label_val.grid(row=2, column=1)
 
         # Row 3
-        self.desc_label = tk.Label(self)
-        self.desc_label.grid(row=3, column=1)
+        self.desc_label = tk.Label(self, text='Description:')
+        self.desc_label.grid(row=3, column=0)
 
         self.desc_label_val = tk.Label(self)
         self.desc_label_val.grid(row=3, column=1)
@@ -46,8 +46,8 @@ class MyOffersInfoPanel(tk.Frame):
     def update_fields(self, item_num='---', min_price='---', status='---', desc='---'):
         self.item_num_label_val['text'] = item_num
         self.min_price_label_val['text'] = '${}'.format(min_price)
-        self.status_label_val['text'] = helper.get_formatted_display_response(status)
-        self.desc_label_val['text'] = desc
+        self.status_label_val['text'] = helper.get_formatted_display_text(status)
+        self.desc_label_val['text'] = helper.get_formatted_display_text(desc)
 
     def clear(self):
         self.update_fields()  # Default args are 'empty' values.

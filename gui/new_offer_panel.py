@@ -53,7 +53,7 @@ class NewOfferPanel(tk.Frame):
             self.set_response_text('Invalid minimum price. Please enter a valid number (< 10 digits).')
 
     def set_response_text(self, response=''):
-        self.response_msg_label['text'] = helper.get_formatted_display_response(response)
+        self.response_msg_label['text'] = helper.get_formatted_display_text(response)
 
     def clear(self):
         self.set_response_text()  # Default arg is empty

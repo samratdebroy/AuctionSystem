@@ -66,11 +66,11 @@ class NewItemPanel(tk.Frame):
     def update_fields(self, item_num='---', min_price='---', descr='---', highest='---'):
         self.item_num_label_val['text'] = item_num
         self.min_price_label_val['text'] = '${}'.format(min_price)
-        self.descr_label_val['text'] = descr
+        self.descr_label_val['text'] = helper.get_formatted_display_text(descr)
         self.highest_label_val['text'] = '${}'.format(highest)
 
     def set_response_text(self, response=''):
-        self.response_label_val['text'] = helper.get_formatted_display_response(response)
+        self.response_label_val['text'] = helper.get_formatted_display_text(response)
 
     def bid_cmnd(self):
         item_num = self.item_num_label_val['text']

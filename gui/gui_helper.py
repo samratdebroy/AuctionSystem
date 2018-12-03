@@ -46,7 +46,11 @@ def item_in_listbox(item_to_check, list_box):
     return item_to_check in list_box.get(0, tk.END)
 
 
-def get_formatted_display_response(response_str):
+def index_item_in_listbox(item_to_check, list_box):
+    if item_in_listbox(item_to_check, list_box):
+        return list_box.get(0, tk.END).index(item_to_check)
+
+def get_formatted_display_text(response_str):
     words = response_str.split(' ')
     formatted_response = ''
     newline_counter = 0

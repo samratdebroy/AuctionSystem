@@ -167,24 +167,24 @@ class AuctionClientGui(tk.Frame):
             self.new_offer_panel.clear()
 
     def set_reg_panel_response(self, response):
-        self.reg_panel.set_response_text(helper.get_formatted_display_response(response))
+        self.reg_panel.set_response_text(helper.get_formatted_display_text(response))
 
     def set_dereg_panel_response(self, response):
-        self.dereg_panel.set_response_text(helper.get_formatted_display_response(response))
+        self.dereg_panel.set_response_text(helper.get_formatted_display_text(response))
 
     def rcv_offer_conf(self, item_num):
         self.my_offers_panel.add_new_ongoing_item(item_num)
         self.add_new_offer_history(item_num, self.client.offers[item_num]['min'], self.client.offers[item_num]['desc'])
 
     def set_new_offer_panel_response(self, response):
-        self.new_offer_panel.set_response_text(helper.get_formatted_display_response(response))
+        self.new_offer_panel.set_response_text(helper.get_formatted_display_text(response))
 
     def rcv_new_item(self, item_num):
         if item_num not in self.client.offers:
             self.items_list_panel.add_new_item(item_num)
 
     def set_new_item_panel_response(self, response):
-        self.items_list_panel.new_item_panel.set_response_text(helper.get_formatted_display_response(response))
+        self.items_list_panel.new_item_panel.set_response_text(helper.get_formatted_display_text(response))
 
     def rcv_highest(self, item_num):
         if self.items_list_panel.selected_item == item_num:

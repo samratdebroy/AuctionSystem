@@ -43,8 +43,9 @@ class ItemsListPanel(tk.Frame):
 
         if helper.item_in_listbox(item_num, self.items_listbox):
 
-            if self.items_listbox.curselection() == item_num:
-                self.new_item_panel.clear()
+            if self.items_listbox.curselection():
+                if self.items_listbox.curselection()[0] == helper.index_item_in_listbox(item_num, self.items_listbox):
+                    self.new_item_panel.clear()
 
             helper.delete_listbox_item(item_num, self.items_listbox)
 
