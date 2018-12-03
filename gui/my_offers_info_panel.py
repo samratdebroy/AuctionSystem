@@ -1,5 +1,5 @@
 import tkinter as tk
-
+import gui.gui_helper as helper
 
 class MyOffersInfoPanel(tk.Frame):
 
@@ -46,7 +46,7 @@ class MyOffersInfoPanel(tk.Frame):
     def update_fields(self, item_num='---', min_price='---', status='---', desc='---'):
         self.item_num_label_val['text'] = item_num
         self.min_price_label_val['text'] = '${}'.format(min_price)
-        self.status_label_val['text'] = status
+        self.status_label_val['text'] = helper.get_formatted_display_response(status)
         self.desc_label_val['text'] = desc
 
     def clear(self):

@@ -257,7 +257,7 @@ class AuctionServer:
 
     async def bidding_counter(self, item_num):
         # Start the bidding counter and handle the events at the end of the bidding period
-        bidding_period = 60*5  # in seconds
+        bidding_period = 10 # 60*5  # in seconds
         await asyncio.sleep(bidding_period)
 
         # Get the seller's address and prepare to send them a message whether or not the item was sold

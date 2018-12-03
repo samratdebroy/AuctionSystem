@@ -44,3 +44,24 @@ def delete_listbox_item(item_to_remove, list_box):
 
 def item_in_listbox(item_to_check, list_box):
     return item_to_check in list_box.get(0, tk.END)
+
+
+def get_formatted_display_response(response_str):
+    words = response_str.split(' ')
+    formatted_response = ''
+    newline_counter = 0
+    word_length = 8
+    for word in words:
+        if len(formatted_response) > 0:
+
+            formatted_response += (' ' + word)
+
+            if newline_counter == word_length - 1:
+                formatted_response += '\n'
+                newline_counter = -1  # Gets reset to zero at the last line of the for-loop
+        else:
+            formatted_response = word
+
+        newline_counter += 1
+
+    return formatted_response

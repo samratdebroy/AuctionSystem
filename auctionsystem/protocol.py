@@ -45,7 +45,7 @@ class REASON(Enum):
                    'Client cannot have more than 3 items offered for auction at a time.')
 
     NO_VALID_BIDS = (b'NO_VALID_BIDS',
-                     'No valid bid exceeding the this offered item\'s minimum purchase price was made on it.')
+                     'No valid bid exceeding this offered item\'s minimum purchase price was made on it.')
 
     def __init__(self, val, string):
         self.val = val

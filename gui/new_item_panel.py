@@ -70,7 +70,7 @@ class NewItemPanel(tk.Frame):
         self.highest_label_val['text'] = '${}'.format(highest)
 
     def set_response_text(self, response=''):
-        self.response_label_val['text'] = response
+        self.response_label_val['text'] = helper.get_formatted_display_response(response)
 
     def bid_cmnd(self):
         item_num = self.item_num_label_val['text']
