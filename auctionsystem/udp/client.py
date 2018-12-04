@@ -20,7 +20,6 @@ class UDPClient:
         if self._socket:
             print('Closing socket', file=sys.stderr)
             self._closed = True
-            # self.task.cancel()
             self._socket.close()
 
     async def _handle_receive(self, loop, handle_receive_cb):

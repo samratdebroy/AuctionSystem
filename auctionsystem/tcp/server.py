@@ -24,8 +24,6 @@ class TCPServer:
             self._closed = True
             self.sock.close()
             # Stop listening for new data to send or receive
-            for task in self.tasks:
-                task.cancel()
 
         def send(self, data):
             # Add data to async queue to ensure it's sent in order

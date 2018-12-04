@@ -25,8 +25,6 @@ class TCPClient:
     def close_connections(self):
         print('Closing connections to this TCP client', file=sys.stderr)
         # Stop listening for new data to send or receive
-        # for task in self.tasks:
-        #     task.cancel()
         self._closed = True
 
         # Close this client's socket
