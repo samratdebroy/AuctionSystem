@@ -7,6 +7,7 @@ import pickle
 import logging
 import sys
 
+
 class AuctionServer:
     def __init__(self, recover=False):
 

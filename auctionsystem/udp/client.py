@@ -20,15 +20,16 @@ class UDPClient:
         if self._socket:
             print('Closing socket', file=sys.stderr)
             self._closed = True
-            self.task.cancel()
+            # self.task.cancel()
             self._socket.close()
 
     async def _handle_receive(self, loop, handle_receive_cb):
         if self._socket:
-            while True:
+            while not self._closed:
                 data, addr = await self._async_recvfrom(loop, 1024)
-                print('From {0} received: {1}'.format(addr, data), file=sys.stderr)
-                handle_receive_cb(data, addr)
+                if data:
+                    print('From {0} received: {1}'.format(addr, data), file=sys.stderr)
+                    handle_receive_cb(data, addr)
 
     def _async_recvfrom(self, loop, n_bytes, future=None, registered=False):
         # asyncio doesn't have an asynchronous version of recvfrom so this is an implementation of it
