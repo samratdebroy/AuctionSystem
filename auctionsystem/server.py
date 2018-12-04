@@ -70,8 +70,12 @@ class AuctionServer:
                 self.sendall_new_item(self.offers[item_num])
 
         # Run the event loop
-        self.loop.run_forever()
-        self.loop.close()
+        try:
+            self.loop.run_forever()
+            self.loop.close()
+        except KeyboardInterrupt:
+            self.loop.close()
+            sys.exit()
 
     def __del__(self):
         self.udp_server.close_socket()
