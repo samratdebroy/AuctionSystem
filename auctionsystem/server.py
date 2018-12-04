@@ -51,7 +51,13 @@ class AuctionServer:
                 self.next_item_number = sorted([int(item_num) for item_num in self.offers.keys()])[-1] + 1
 
         # Setup sockets
-        self.udp_server = UDPServer(self.loop, self.handle_receive, logger=self.logger)
+        self.udp_server = None
+        try:
+            self.udp_server = UDPServer(self.loop, self.handle_receive, logger=self.logger)
+        except OSError as err:
+            self.logger.error('Server could not start the UDP server: Error {}'.format(err))
+            sys.exit()
+
         self.tcp_servers = dict()
 
         if recover and self.offers:
@@ -73,7 +79,8 @@ class AuctionServer:
         self.loop.close()
 
     def __del__(self):
-        self.udp_server.close_socket()
+        if self.udp_server:
+            self.udp_server.close_socket()
 
     def handle_receive(self, data, addr=None):
         # TODO: Handle the case where data[0] is damaged or None
