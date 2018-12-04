@@ -21,7 +21,6 @@ class UDPServer:
     def close_socket(self):
         self.logger.info('Closing socket')
         self._closed = True
-        self.task.cancel()
         self._socket.close()
 
     @staticmethod
@@ -50,12 +49,12 @@ class UDPServer:
         return sock
 
     async def _handle_receive(self, loop, handle_receive_cb):
-        while True:
+        while not self._closed:
             data, addr = await self._async_recvfrom(loop, 1024)
             if (data, addr) == (None, None):
                 # This means we received an ICMP Error, ignore this data
                 continue
-                self.logger.info('From {0} received: {1}'.format(addr, data))
+            self.logger.info('From {0} received: {1}'.format(addr, data))
             handle_receive_cb(data, addr)
 
     def _async_recvfrom(self, loop, n_bytes, future=None, registered=False):

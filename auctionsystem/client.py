@@ -125,6 +125,7 @@ class AuctionClient:
 
         self.tcp_clients.clear()  # Should close all of the connections
         self.udp_client.close_socket()
+        # self.udp_client = None
 
         if self.gui_update_cb:
             self.gui_update_cb(MESSAGE.DEREGISTER_CONFIRM)
@@ -171,7 +172,7 @@ class AuctionClient:
             self.send_bid(item_num, self.bidding_items[item_num]['last_bid'])
         else:
             self.bidding_items[item_num] = {'item_num': item_num, 'port_num': port, 'desc': desc, 'min': min_price,
-                                            'highest': False, 'highest_bid': min_price, 'last_bid': 0}
+                                            'highest': False, 'highest_bid': min_price, 'last_bid': '0'}
             self.tcp_clients[item_num] = TCPClient(self.loop, self.handle_receive, (self.server_address[0], int(port)))
 
             if self.gui_update_cb:
@@ -205,6 +206,7 @@ class AuctionClient:
             print("You are NOT the winner of item {}, bought for {}!".format(item_num, amount))
 
     def bidding_ended(self, item_num):
+        self.tcp_clients[item_num].close_connections()
         del self.tcp_clients[item_num]
         del self.bidding_items[item_num]
 

@@ -25,6 +25,7 @@ class AuctionClientGui(tk.Frame):
         # Fields
         self.client = None
         self.offers_history = {}
+        self.registered = False
 
         # Row 0
         self.reg_panel = RegisterPanel(master=self, register_cb=self.register_cb)
@@ -151,6 +152,8 @@ class AuctionClientGui(tk.Frame):
     # Called when receiving registered or dereg confirmed messages
     def activate_client_interface(self, activate):
 
+        self.registered = activate
+
         # When the interface is active, the register panel is inaccessible and the rest is
         # vice-versa when it's no longer active
 
@@ -167,7 +170,8 @@ class AuctionClientGui(tk.Frame):
             self.new_offer_panel.clear()
 
     def set_reg_panel_response(self, response):
-        self.reg_panel.set_response_text(helper.get_formatted_display_text(response))
+        if not self.registered:
+            self.reg_panel.set_response_text(helper.get_formatted_display_text(response))
 
     def set_dereg_panel_response(self, response):
         self.dereg_panel.set_response_text(helper.get_formatted_display_text(response))

@@ -14,15 +14,16 @@ class TCPServer:
             self._send_queue = asyncio.Queue(loop=loop)
             self.tasks = []
 
+            self._closed = False
+
             # Create listener to receive data
             self.tasks.append(loop.create_task(self._handle_receive(loop, handle_receive_cb)))
             self.tasks.append(loop.create_task(self._handle_send(loop)))
 
         def __del__(self):
+            self._closed = True
             self.sock.close()
             # Stop listening for new data to send or receive
-            for task in self.tasks:
-                task.cancel()
 
         def send(self, data):
             # Add data to async queue to ensure it's sent in order
@@ -30,13 +31,13 @@ class TCPServer:
             self._send_queue.put_nowait(data)
 
         async def _handle_receive(self, loop, handle_receive_cb):
-            while True:
+            while not self._closed:
                 data = await loop.sock_recv(self.sock, 1024)
                 self.logger.info('Received: {0} from {1}'.format(data, self.addr))
                 handle_receive_cb(data, self.addr)
 
         async def _handle_send(self, loop):
-            while True:
+            while not self._closed:
                 # Send data to client asynchronously
                 data = await self._send_queue.get()
                 try:
@@ -52,6 +53,8 @@ class TCPServer:
         self.logger = logger
         self.conn = {}  # Dict of all valid connections
         self._socket = self.get_tcp_server_socket(self.logger, port_number)
+
+        self._closed = False
 
         # Start listener for new connections
         self.receive_task = loop.create_task(self._handle_new_connections(loop, handle_receive_cb))
@@ -88,7 +91,7 @@ class TCPServer:
         return sock
 
     async def _handle_new_connections(self, loop, handle_receive_cb):
-        while True:
+        while not self._closed:
             conn, addr = await loop.sock_accept(self._socket)
             connection = self.Connection(loop, conn, addr, handle_receive_cb, self.logger)
             self.conn[addr] = connection

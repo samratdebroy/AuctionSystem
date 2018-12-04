@@ -10,6 +10,7 @@ class TCPClient:
         self._socket = self.get_tcp_client_socket()
         self._send_queue = asyncio.Queue(loop=loop)
 
+        self._closed = False
         self.tasks = []
         self.tasks.append(loop.create_task(self.initialize_client(loop, handle_receive_cb)))
 
@@ -24,8 +25,7 @@ class TCPClient:
     def close_connections(self):
         print('Closing connections to this TCP client', file=sys.stderr)
         # Stop listening for new data to send or receive
-        for task in self.tasks:
-            task.close()
+        self._closed = True
 
         # Close this client's socket
         self._socket.close()
@@ -62,13 +62,17 @@ class TCPClient:
             sys.exit()
 
     async def _handle_receive(self, loop, handle_receive_cb):
-        while True:
-            data = await loop.sock_recv(self._socket, 1024)
-            print('Received: {0} from {1}'.format(data, self.server_address), file=sys.stderr)
-            handle_receive_cb(data, self.server_address)
+        while not self._closed:
+            try:
+                data = await loop.sock_recv(self._socket, 1024)
+                print('Received: {0} from {1}'.format(data, self.server_address), file=sys.stderr)
+                handle_receive_cb(data, self.server_address)
+            except OSError:
+                await asyncio.sleep(0.1)
+                continue
 
     async def _handle_send(self, loop):
-        while True:
+        while not self._closed:
             # Send data to client asynchronously
             data = await self._send_queue.get()
             try:
