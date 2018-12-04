@@ -171,7 +171,7 @@ class AuctionClient:
             self.send_bid(item_num, self.bidding_items[item_num]['last_bid'])
         else:
             self.bidding_items[item_num] = {'item_num': item_num, 'port_num': port, 'desc': desc, 'min': min_price,
-                                            'highest': False, 'highest_bid': min_price, 'last_bid': 0}
+                                            'highest': False, 'highest_bid': min_price, 'last_bid': '0'}
             self.tcp_clients[item_num] = TCPClient(self.loop, self.handle_receive, (self.server_address[0], int(port)))
 
             if self.gui_update_cb:
